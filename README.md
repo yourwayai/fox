@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/fox.png" width="160" alt="Fox Logo" />
+</p>
+
 # Fox 🦊
 
 > **Fox，陪你读懂每一段。**  
