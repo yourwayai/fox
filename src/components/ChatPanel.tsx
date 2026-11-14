@@ -12,11 +12,14 @@ import {
   Quote,
   Settings,
   AlertCircle,
+  Eye,
+  Compass,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { FoxMascot } from './FoxMascot';
 import { CodeBlock } from './CodeBlock';
-import { AIService } from '../services/aiService';
+import { PromptPreviewModal } from './PromptPreviewModal';
+import { AIService, PromptPreviewInfo } from '../services/aiService';
 import { ChatMessage } from '../types';
 
 export const ChatPanel: React.FC = () => {
@@ -39,6 +42,9 @@ export const ChatPanel: React.FC = () => {
 
   const [inputVal, setInputVal] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<PromptPreviewInfo | null>(null);
+
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +56,18 @@ export const ChatPanel: React.FC = () => {
       inputRef.current?.focus();
     }
   }, [focusInputSignal]);
+
+  // Open Prompt Preview
+  const handleOpenPreview = () => {
+    const data = AIService.assemblePromptPreview({
+      documentName: activeDocument?.name || '当前文档',
+      quote: activeQuote,
+      userQuestion: inputVal.trim() || '请解释这段内容的核心含义及背景。',
+      history: messages,
+    });
+    setPreviewData(data);
+    setIsPreviewOpen(true);
+  };
 
   // Handle send question
   const handleSend = async (customPrompt?: string) => {
@@ -91,6 +109,7 @@ export const ChatPanel: React.FC = () => {
     // Trigger AI stream
     await AIService.streamChat({
       config,
+      documentName: activeDocument?.name || '当前文档',
       messages: [...messages, userMsg],
       quote: currentQuote || undefined,
       onChunk: (delta) => {
@@ -174,10 +193,18 @@ export const ChatPanel: React.FC = () => {
             <div key={m.id} className="flex flex-col space-y-1.5">
               {/* User Quote preview card */}
               {m.quote && (
-                <div className="text-xs border-l-2 border-fox-orange bg-orange-50/60 p-2.5 rounded-r-md text-neutral-600 mb-1">
-                  <div className="flex items-center gap-1 text-[10px] font-semibold text-fox-darkOrange uppercase mb-1">
-                    <Quote className="w-3 h-3" />
-                    文档引用
+                <div className="text-xs border-l-2 border-fox-orange bg-orange-50/70 p-2.5 rounded-r-md text-neutral-600 mb-1">
+                  <div className="flex items-center justify-between text-[10px] font-semibold text-fox-darkOrange uppercase mb-1">
+                    <span className="flex items-center gap-1">
+                      <Quote className="w-3 h-3" />
+                      选区引用
+                    </span>
+                    {m.quote.headingPath && (
+                      <span className="flex items-center gap-1 text-neutral-400 font-normal truncate max-w-[180px]">
+                        <Compass className="w-3 h-3 flex-shrink-0" />
+                        {m.quote.headingPath}
+                      </span>
+                    )}
                   </div>
                   <div className="line-clamp-3 text-neutral-700 italic">
                     "{m.quote.text}"
@@ -269,24 +296,45 @@ export const ChatPanel: React.FC = () => {
 
       {/* Input Area */}
       <div className="p-3 border-t border-neutral-200 bg-white select-none">
-        {/* Active Quote preview before send */}
+        {/* Active Quote preview card above textarea */}
         {activeQuote && (
-          <div className="relative mb-2 p-2 bg-orange-50/80 border border-orange-200 rounded-lg text-xs text-neutral-700 flex items-start justify-between">
-            <div className="flex items-start gap-1.5 overflow-hidden pr-2">
-              <Quote className="w-3.5 h-3.5 text-fox-orange flex-shrink-0 mt-0.5" />
-              <div className="line-clamp-2 italic text-neutral-600">
-                "{activeQuote.text}"
+          <div className="relative mb-2 p-2.5 bg-orange-50/80 border border-orange-200 rounded-lg text-xs text-neutral-700">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-semibold text-fox-darkOrange uppercase">
+                <Quote className="w-3 h-3" />
+                <span>附带选区上下文</span>
+                {activeQuote.headingPath && (
+                  <span className="text-neutral-400 font-normal truncate max-w-[160px]">
+                    · {activeQuote.headingPath}
+                  </span>
+                )}
               </div>
+              <button
+                onClick={() => setActiveQuote(null)}
+                title="移除本次引用"
+                className="p-1 text-neutral-400 hover:text-neutral-700 rounded transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <button
-              onClick={() => setActiveQuote(null)}
-              title="移除本次引用"
-              className="p-1 text-neutral-400 hover:text-neutral-700"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+            <div className="line-clamp-2 italic text-neutral-600 text-[11px]">
+              "{activeQuote.text}"
+            </div>
           </div>
         )}
+
+        {/* Toolbar bar above input: Send Preview trigger */}
+        <div className="flex items-center justify-between px-1 mb-1.5 text-[11px] text-neutral-400">
+          <span>{activeDocument?.name || '当前文档'}</span>
+          <button
+            onClick={handleOpenPreview}
+            className="flex items-center gap-1 text-neutral-500 hover:text-fox-darkOrange hover:underline transition-colors"
+            title="查看完整发送给 AI 的 Prompt 与预估 Tokens"
+          >
+            <Eye className="w-3 h-3" />
+            <span>发送预览</span>
+          </button>
+        </div>
 
         <div className="relative flex items-end gap-2 border border-neutral-300 focus-within:border-fox-orange rounded-xl px-3 py-2 bg-neutral-50/50 transition-colors">
           <textarea
@@ -328,6 +376,15 @@ export const ChatPanel: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Prompt Preview Modal */}
+      {previewData && (
+        <PromptPreviewModal
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          previewInfo={previewData}
+        />
+      )}
     </div>
   );
 };

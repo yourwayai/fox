@@ -5,6 +5,7 @@ import { Upload, Sparkles, PlusCircle, FileText, ArrowDownToLine } from 'lucide-
 import { useAppStore } from '../store/useAppStore';
 import { SelectionContext } from '../types';
 import { CodeBlock } from './CodeBlock';
+import { extractSelectionContext } from '../utils/contextExtractor';
 
 export const MarkdownReader: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -24,8 +25,8 @@ export const MarkdownReader: React.FC = () => {
     visible: boolean;
     x: number;
     y: number;
-    selectedText: string;
-  }>({ visible: false, x: 0, y: 0, selectedText: '' });
+    context: SelectionContext | null;
+  }>({ visible: false, x: 0, y: 0, context: null });
 
   // Handle file reading
   const processFile = useCallback(
@@ -59,7 +60,6 @@ export const MarkdownReader: React.FC = () => {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Only deactivate if leaving outside the container
     if (e.currentTarget.contains(e.relatedTarget as Node)) return;
     setIsDraggingOver(false);
   };
@@ -87,7 +87,7 @@ export const MarkdownReader: React.FC = () => {
     setScrollProgress(progress);
   }, [setScrollProgress]);
 
-  // Selection detection
+  // Selection detection with full heading path & surrounding paragraph extraction
   useEffect(() => {
     const handleMouseUp = () => {
       const selection = window.getSelection();
@@ -96,8 +96,11 @@ export const MarkdownReader: React.FC = () => {
         return;
       }
 
-      const text = selection.toString().trim();
-      if (text.length < 2) return;
+      const extracted = extractSelectionContext();
+      if (!extracted || extracted.text.length < 2) {
+        setSelectionBox((prev) => ({ ...prev, visible: false }));
+        return;
+      }
 
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
@@ -106,7 +109,7 @@ export const MarkdownReader: React.FC = () => {
         visible: true,
         x: rect.left + rect.width / 2,
         y: Math.max(10, rect.top - 46),
-        selectedText: text,
+        context: extracted,
       });
     };
 
@@ -126,11 +129,8 @@ export const MarkdownReader: React.FC = () => {
 
   // Action: Explain selection immediately
   const handleExplain = () => {
-    if (!selectionBox.selectedText) return;
-    const quote: SelectionContext = {
-      id: `quote_${Date.now()}`,
-      text: selectionBox.selectedText,
-    };
+    if (!selectionBox.context) return;
+    const quote = selectionBox.context;
     setActiveQuote(quote);
     setSelectionBox((prev) => ({ ...prev, visible: false }));
 
@@ -146,11 +146,8 @@ export const MarkdownReader: React.FC = () => {
 
   // Action: Add quote to question input
   const handleAddToQuestion = () => {
-    if (!selectionBox.selectedText) return;
-    const quote: SelectionContext = {
-      id: `quote_${Date.now()}`,
-      text: selectionBox.selectedText,
-    };
+    if (!selectionBox.context) return;
+    const quote = selectionBox.context;
     setActiveQuote(quote);
     setSelectionBox((prev) => ({ ...prev, visible: false }));
     triggerFocusInput();
@@ -170,9 +167,9 @@ Fox 是专为 **技术阅读与概念深度理解** 设计的 Markdown AI 伴读
 
 ---
 
-### 🎨 本次新增：语法高亮与代码块
+### 🎨 代码高亮与代码块已就绪
 
-Fox 现已全面支持各类主流语言的代码高亮及一键复制：
+Fox 全面支持各类主流语言的代码高亮及一键复制：
 
 \`\`\`typescript
 // src/services/aiService.ts
@@ -198,13 +195,12 @@ def compute_relevance(query: str, doc_segment: str) -> float:
 
 ---
 
-### 📂 文件拖拽已就绪
+### 🧭 上下文透明与章节追踪
 
-您可以从电脑桌面或文件夹中，**将任意 \`.md\` 文件直接拖入当前窗口**，即可秒级解析并开始伴读！
-
-1. **选中文本体验**：用鼠标选中本页任意文字，点击浮出的 **[✨ 解释]**。
-2. **观察小狐狸**：左上角吉祥物外圈的 **阅读进度环** 会跟随您的阅读滚动实时变化。
-3. **点击外链**：如 [Fox GitHub 仓库](https://github.com/yourwayai/fox)，均以安全只读方式在新标签页打开。
+当您在这一小节选中文字时：
+1. Fox 会**自动定位您所在的小节层级**（例如：\`欢迎使用 Fox 🦊 > 🧭 上下文透明与章节追踪\`）；
+2. 自动抓取选中句子的**前后邻近上下文段落**，作为背景知识提供给 AI；
+3. 点击左侧输入框上方的 **【👁️ 发送预览】**，可以随时查看真实发送给 AI 的 Prompt 和 Token 预估，杜绝盲盒！
 `,
         scrollProgress: 0,
       });
@@ -287,7 +283,7 @@ def compute_relevance(query: str, doc_segment: str) -> float:
       </div>
 
       {/* Floating Selection Toolbar */}
-      {selectionBox.visible && (
+      {selectionBox.visible && selectionBox.context && (
         <div
           className="selection-toolbar fixed z-50 flex items-center gap-1 bg-[#1F242D] text-white px-2 py-1.5 rounded-lg shadow-xl border border-neutral-700 -translate-x-1/2 animate-in fade-in zoom-in-95 duration-150 select-none"
           style={{ left: `${selectionBox.x}px`, top: `${selectionBox.y}px` }}

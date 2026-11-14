@@ -1,4 +1,13 @@
 import { ProviderConfig, SelectionContext, ChatMessage } from '../types';
+import { estimateTokens } from '../utils/contextExtractor';
+
+export interface PromptPreviewInfo {
+  systemPrompt: string;
+  assembledUserMessage: string;
+  historyCount: number;
+  estimatedTokens: number;
+  documentTitle: string;
+}
 
 export class AIService {
   private static activeAbortController: AbortController | null = null;
@@ -46,8 +55,56 @@ export class AIService {
     }
   }
 
+  /**
+   * Generates a preview of the prompt payload and conservative token count
+   */
+  public static assemblePromptPreview({
+    documentName,
+    quote,
+    userQuestion,
+    history,
+  }: {
+    documentName: string;
+    quote?: SelectionContext | null;
+    userQuestion: string;
+    history: ChatMessage[];
+  }): PromptPreviewInfo {
+    const systemPrompt =
+      '你是 Fox，一位安静、友好且洞察深刻的 Markdown 伴读助手。你的任务是基于读者选中的文档内容提供清晰、简明、有针对性的解释或回答。请优先根据提供的选区及其所属章节回答，对于推论需说明依据。';
+
+    let assembled = '';
+    if (quote) {
+      assembled += `【参考文档】: 《${documentName}》\n`;
+      if (quote.headingPath) {
+        assembled += `【章节导航】: ${quote.headingPath}\n`;
+      }
+      assembled += `【选区原文】:\n"""\n${quote.text}\n"""\n`;
+      if (quote.surroundingContext) {
+        assembled += `\n【邻近段落上下文】:\n${quote.surroundingContext}\n`;
+      }
+      assembled += `\n【读者提问】:\n${userQuestion || '请解释这段内容的核心含义及背景。'}`;
+    } else {
+      assembled = `【参考文档】: 《${documentName}》\n【读者提问】:\n${userQuestion}`;
+    }
+
+    // Estimate total tokens including system prompt, user prompt, and recent history
+    let fullText = systemPrompt + assembled;
+    history.forEach((m) => {
+      fullText += m.content;
+    });
+
+    return {
+      systemPrompt,
+      assembledUserMessage: assembled,
+      historyCount: history.length,
+      estimatedTokens: estimateTokens(fullText),
+      documentTitle: documentName,
+    };
+  }
+
   public static async streamChat({
     config,
+    documentName = '当前文档',
     messages,
     quote,
     onChunk,
@@ -55,6 +112,7 @@ export class AIService {
     onError,
   }: {
     config: ProviderConfig;
+    documentName?: string;
     messages: ChatMessage[];
     quote?: SelectionContext;
     onChunk: (delta: string) => void;
@@ -68,35 +126,52 @@ export class AIService {
     try {
       const url = this.formatBaseUrl(config.baseUrl);
 
-      // Assemble system & user prompts with context
+      const systemPrompt =
+        '你是 Fox，一位安静、友好且洞察深刻的 Markdown 伴读助手。你的任务是基于读者选中的文档内容提供清晰、简明、有针对性的解释或回答。请优先根据提供的选区及其所属章节回答。';
+
       const apiMessages: Array<{ role: string; content: string }> = [
         {
           role: 'system',
-          content: '你是 Fox，一位安静、友好且洞察深刻的 Markdown 伴读助手。你的任务是基于读者选中的文档内容提供清晰、简明、有针对性的解释或回答。',
+          content: systemPrompt,
         },
       ];
 
       // Convert chat history
-      for (const m of messages) {
+      for (let i = 0; i < messages.length - 1; i++) {
+        const m = messages[i];
         if (m.status === 'error') continue;
         if (m.role === 'user' && m.quote) {
-          apiMessages.push({
-            role: 'user',
-            content: `【参考文档选区】:\n"""\n${m.quote.text}\n"""\n\n【读者提问】:\n${m.content}`,
-          });
+          let content = `【选区原文】:\n"""\n${m.quote.text}\n"""\n`;
+          if (m.quote.headingPath) {
+            content = `【章节层级】: ${m.quote.headingPath}\n` + content;
+          }
+          content += `\n【读者提问】:\n${m.content}`;
+          apiMessages.push({ role: 'user', content });
         } else {
-          apiMessages.push({
-            role: m.role,
-            content: m.content,
-          });
+          apiMessages.push({ role: m.role, content: m.content });
         }
       }
 
-      // If there is an active new quote for the last question not yet formatted
+      // Last user question
       const lastMsg = messages[messages.length - 1];
-      if (quote && lastMsg && lastMsg.role === 'user' && !lastMsg.quote) {
-        apiMessages[apiMessages.length - 1].content = `【参考文档选区】:\n"""\n${quote.text}\n"""\n\n【读者提问】:\n${lastMsg.content}`;
+      const activeQuote = quote || lastMsg?.quote;
+
+      let lastContent = '';
+      if (activeQuote) {
+        lastContent += `【参考文档】: 《${documentName}》\n`;
+        if (activeQuote.headingPath) {
+          lastContent += `【章节导航】: ${activeQuote.headingPath}\n`;
+        }
+        lastContent += `【选区原文】:\n"""\n${activeQuote.text}\n"""\n`;
+        if (activeQuote.surroundingContext) {
+          lastContent += `\n【邻近段落参考】:\n${activeQuote.surroundingContext}\n`;
+        }
+        lastContent += `\n【读者提问】:\n${lastMsg?.content || '请解释这段内容。'}`;
+      } else {
+        lastContent = `【参考文档】: 《${documentName}》\n【读者提问】:\n${lastMsg?.content || ''}`;
       }
+
+      apiMessages.push({ role: 'user', content: lastContent });
 
       const res = await fetch(url, {
         method: 'POST',
@@ -166,7 +241,6 @@ export class AIService {
       onFinish();
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
-        // User voluntarily stopped generation
         onFinish();
         return;
       }
