@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { FoxMascot } from './FoxMascot';
+import { CodeBlock } from './CodeBlock';
 import { AIService } from '../services/aiService';
 import { ChatMessage } from '../types';
 
@@ -203,7 +204,17 @@ export const ChatPanel: React.FC = () => {
                     )}
 
                     <div className="markdown-body text-xs prose-neutral max-w-none">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          code: CodeBlock,
+                          a: ({ href, children }) => (
+                            <a href={href} target="_blank" rel="noopener noreferrer">
+                              {children}
+                            </a>
+                          ),
+                        }}
+                      >
                         {m.content}
                       </ReactMarkdown>
                     </div>

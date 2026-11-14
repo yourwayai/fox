@@ -1,9 +1,10 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Upload, Sparkles, PlusCircle } from 'lucide-react';
+import { Upload, Sparkles, PlusCircle, FileText, ArrowDownToLine } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { SelectionContext } from '../types';
+import { CodeBlock } from './CodeBlock';
 
 export const MarkdownReader: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -18,6 +19,7 @@ export const MarkdownReader: React.FC = () => {
     triggerFocusInput,
   } = useAppStore();
 
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [selectionBox, setSelectionBox] = useState<{
     visible: boolean;
     x: number;
@@ -26,22 +28,51 @@ export const MarkdownReader: React.FC = () => {
   }>({ visible: false, x: 0, y: 0, selectedText: '' });
 
   // Handle file reading
-  const handleFileChange = (file: File) => {
-    if (!file.name.endsWith('.md') && !file.name.endsWith('.markdown')) {
-      alert('请上传 .md 或 .markdown 格式的文件');
-      return;
+  const processFile = useCallback(
+    (file: File) => {
+      if (!file.name.endsWith('.md') && !file.name.endsWith('.markdown')) {
+        alert('请载入 .md 或 .markdown 格式的文件');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = (e.target?.result as string) || '';
+        setActiveDocument({
+          id: `doc_${Date.now()}_${file.name}`,
+          name: file.name,
+          content,
+          scrollProgress: 0,
+        });
+      };
+      reader.readAsText(file);
+    },
+    [setActiveDocument]
+  );
+
+  // Drag and Drop listeners
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only deactivate if leaving outside the container
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processFile(files[0]);
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = (e.target?.result as string) || '';
-      setActiveDocument({
-        id: `doc_${Date.now()}_${file.name}`,
-        name: file.name,
-        content,
-        scrollProgress: 0,
-      });
-    };
-    reader.readAsText(file);
   };
 
   // Scroll listener for reading progress
@@ -71,7 +102,6 @@ export const MarkdownReader: React.FC = () => {
       const range = selection.getRangeAt(0);
       const rect = range.getBoundingClientRect();
 
-      // Show floating popup directly above selection
       setSelectionBox({
         visible: true,
         x: rect.left + rect.width / 2,
@@ -81,7 +111,6 @@ export const MarkdownReader: React.FC = () => {
     };
 
     const handleMouseDown = (e: MouseEvent) => {
-      // Don't close if clicking within the floating popup
       const target = e.target as HTMLElement;
       if (target.closest('.selection-toolbar')) return;
       setSelectionBox((prev) => ({ ...prev, visible: false }));
@@ -105,7 +134,6 @@ export const MarkdownReader: React.FC = () => {
     setActiveQuote(quote);
     setSelectionBox((prev) => ({ ...prev, visible: false }));
 
-    // Send explain prompt directly
     addMessage({
       id: `msg_${Date.now()}`,
       role: 'user',
@@ -128,7 +156,7 @@ export const MarkdownReader: React.FC = () => {
     triggerFocusInput();
   };
 
-  // Load default sample if no doc
+  // Default sample with code blocks and rich markdown
   useEffect(() => {
     if (!activeDocument) {
       setActiveDocument({
@@ -136,30 +164,47 @@ export const MarkdownReader: React.FC = () => {
         name: '欢迎体验 Fox.md',
         content: `# 欢迎使用 Fox 🦊
 
-Fox 是专为 **深度阅读与概念理解** 设计的 Markdown AI 伴读工具。
+Fox 是专为 **技术阅读与概念深度理解** 设计的 Markdown AI 伴读工具。
 
 > “读到不懂的地方，选中它，即可获得有上下文的解释，同时保持阅读位置不变。”
 
 ---
 
-### 快速上手
+### 🎨 本次新增：语法高亮与代码块
 
-1. **选中任意文本**：例如选中这一段文字，会自动浮现 **[✨ 解释]** 和 **[➕ 加入提问]** 按钮。
-2. **点击 [✨ 解释]**：Fox 将在左侧对话栏为您针对性解读，无需来回复制粘贴。
-3. **点击 [➕ 加入提问]**：引用段落将自动作为上下文附着在输入框上方，便于您连续追问。
-4. **尾巴与耳朵反馈**：
-   - 当您在右侧滚动页面时，请观察左上角的小狐狸，**大尾巴会随着您的阅读进度舒展与抬起**；
-   - 顶部状态徽章会随着 AI 服务的状态（就绪、思考、生成中）灵动切换。
+Fox 现已全面支持各类主流语言的代码高亮及一键复制：
+
+\`\`\`typescript
+// src/services/aiService.ts
+export interface ChatCompletionChunk {
+  id: string;
+  choices: Array<{
+    delta: { content?: string };
+    finish_reason: string | null;
+  }>;
+}
+
+export async function parseSSE(stream: ReadableStream<Uint8Array>) {
+  console.log("Fox 流式解析就绪 🦊");
+}
+\`\`\`
+
+\`\`\`python
+# 示例：快速分析文档向量相似度
+def compute_relevance(query: str, doc_segment: str) -> float:
+    print(f"Analyzing relevance for: {query[:20]}...")
+    return 0.985
+\`\`\`
 
 ---
 
-### 技术规格简述
+### 📂 文件拖拽已就绪
 
-- **只读沙箱**：不修改原文档，不执行 Markdown 中嵌入的恶意脚本。
-- **自定义 AI 服务**：点击左上角齿轮设置，支持接入任何兼容 OpenAI 协议的端点（如 DeepSeek、OpenAI、本地 Ollama 等）。
-- **可控上下文预算**：所有发送给 AI 的引用均透明可见，杜绝隐式截断。
+您可以从电脑桌面或文件夹中，**将任意 \`.md\` 文件直接拖入当前窗口**，即可秒级解析并开始伴读！
 
-*祝您阅读愉快！随时在右上方点击【打开文档】导入您自己的 Markdown 学习资料。*
+1. **选中文本体验**：用鼠标选中本页任意文字，点击浮出的 **[✨ 解释]**。
+2. **观察小狐狸**：左上角吉祥物外圈的 **阅读进度环** 会跟随您的阅读滚动实时变化。
+3. **点击外链**：如 [Fox GitHub 仓库](https://github.com/yourwayai/fox)，均以安全只读方式在新标签页打开。
 `,
         scrollProgress: 0,
       });
@@ -167,10 +212,31 @@ Fox 是专为 **深度阅读与概念理解** 设计的 Markdown AI 伴读工具
   }, [activeDocument, setActiveDocument]);
 
   return (
-    <div className="relative flex flex-col h-full bg-white select-text">
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className="relative flex flex-col h-full bg-white select-text"
+    >
+      {/* Drag & Drop Visual Overlay */}
+      {isDraggingOver && (
+        <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-xs flex flex-col items-center justify-center border-2 border-dashed border-fox-orange m-3 rounded-2xl select-none animate-in fade-in duration-150">
+          <div className="p-4 bg-orange-50 rounded-2xl text-fox-darkOrange mb-3 shadow-xs animate-bounce">
+            <ArrowDownToLine className="w-10 h-10" />
+          </div>
+          <h3 className="text-base font-semibold text-neutral-800 mb-1">
+            释放鼠标即可载入文档
+          </h3>
+          <p className="text-xs text-neutral-500">
+            支持标准 .md 或 .markdown 格式
+          </p>
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="h-12 border-b border-neutral-200 px-6 flex items-center justify-between bg-white/80 backdrop-blur z-10 flex-shrink-0">
         <div className="flex items-center gap-2 overflow-hidden">
+          <FileText className="w-4 h-4 text-neutral-500 flex-shrink-0" />
           <span className="text-sm font-semibold text-neutral-800 truncate">
             {activeDocument?.name || '未打开文档'}
           </span>
@@ -183,7 +249,7 @@ Fox 是专为 **深度阅读与概念理解** 设计的 Markdown AI 伴读工具
           <input
             type="file"
             ref={fileInputRef}
-            onChange={(e) => e.target.files?.[0] && handleFileChange(e.target.files[0])}
+            onChange={(e) => e.target.files?.[0] && processFile(e.target.files[0])}
             accept=".md,.markdown"
             className="hidden"
           />
@@ -204,7 +270,17 @@ Fox 是专为 **深度阅读与概念理解** 设计的 Markdown AI 伴读工具
         className="flex-1 overflow-y-auto px-10 py-8 scroll-smooth"
       >
         <div className="max-w-3xl mx-auto markdown-body">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              code: CodeBlock,
+              a: ({ href, children }) => (
+                <a href={href} target="_blank" rel="noopener noreferrer">
+                  {children}
+                </a>
+              ),
+            }}
+          >
             {activeDocument?.content || ''}
           </ReactMarkdown>
         </div>
