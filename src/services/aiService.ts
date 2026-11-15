@@ -7,6 +7,12 @@ export interface PromptPreviewInfo {
   historyCount: number;
   estimatedTokens: number;
   documentTitle: string;
+  budget: number;
+  isOverBudget: boolean;
+  budgetPercentage: number;
+  systemTokens: number;
+  userTokens: number;
+  historyTokens: number;
 }
 
 export class AIService {
@@ -56,18 +62,20 @@ export class AIService {
   }
 
   /**
-   * Generates a preview of the prompt payload and conservative token count
+   * Generates a preview of the prompt payload and conservative token count with budget breakdown
    */
   public static assemblePromptPreview({
     documentName,
     quote,
     userQuestion,
     history,
+    budget = 4096,
   }: {
     documentName: string;
     quote?: SelectionContext | null;
     userQuestion: string;
     history: ChatMessage[];
+    budget?: number;
   }): PromptPreviewInfo {
     const systemPrompt =
       '你是 Fox，一位安静、友好且洞察深刻的 Markdown 伴读助手。你的任务是基于读者选中的文档内容提供清晰、简明、有针对性的解释或回答。请优先根据提供的选区及其所属章节回答，对于推论需说明依据。';
@@ -87,18 +95,30 @@ export class AIService {
       assembled = `【参考文档】: 《${documentName}》\n【读者提问】:\n${userQuestion}`;
     }
 
-    // Estimate total tokens including system prompt, user prompt, and recent history
-    let fullText = systemPrompt + assembled;
+    const systemTokens = estimateTokens(systemPrompt);
+    const userTokens = estimateTokens(assembled);
+
+    let historyTokens = 0;
     history.forEach((m) => {
-      fullText += m.content;
+      historyTokens += estimateTokens(m.content);
     });
+
+    const totalEstimated = systemTokens + userTokens + historyTokens;
+    const safeBudget = budget > 0 ? budget : 4096;
+    const percentage = Math.min(100, Math.round((totalEstimated / safeBudget) * 100));
 
     return {
       systemPrompt,
       assembledUserMessage: assembled,
       historyCount: history.length,
-      estimatedTokens: estimateTokens(fullText),
+      estimatedTokens: totalEstimated,
       documentTitle: documentName,
+      budget: safeBudget,
+      isOverBudget: totalEstimated > safeBudget,
+      budgetPercentage: percentage,
+      systemTokens,
+      userTokens,
+      historyTokens,
     };
   }
 

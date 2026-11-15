@@ -199,6 +199,34 @@ export const SettingsModal: React.FC = () => {
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-fox-orange text-xs bg-neutral-50"
               />
             </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] font-medium text-neutral-600">
+                  上下文预算 (Tokens)
+                </label>
+                <span className="text-[10px] text-neutral-400">
+                  {currentConfig.contextBudget || 4096} Tokens
+                </span>
+              </div>
+              <input
+                type="number"
+                min={1000}
+                max={128000}
+                step={1024}
+                value={currentConfig.contextBudget || 4096}
+                onChange={(e) =>
+                  setCurrentConfig({
+                    ...currentConfig,
+                    contextBudget: parseInt(e.target.value, 10) || 4096,
+                  })
+                }
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:border-fox-orange text-xs bg-neutral-50"
+              />
+              <span className="text-[10px] text-neutral-400 mt-1 block">
+                用于估算单次发送最大规模，超限时应用主动提醒调整，不静默截断。
+              </span>
+            </div>
           </div>
 
           {/* Test feedback banner */}

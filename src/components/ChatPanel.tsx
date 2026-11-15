@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Eye,
   Compass,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { FoxMascot } from './FoxMascot';
@@ -49,6 +50,8 @@ export const ChatPanel: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isGenerating = foxEarState === 'generating' || foxEarState === 'waiting';
+  const config = getActiveConfig();
+  const budget = config?.contextBudget || 4096;
 
   // Auto focus input when signal changes
   useEffect(() => {
@@ -57,27 +60,37 @@ export const ChatPanel: React.FC = () => {
     }
   }, [focusInputSignal]);
 
-  // Open Prompt Preview
-  const handleOpenPreview = () => {
-    const data = AIService.assemblePromptPreview({
+  // Real-time calculation of current prompt token budget
+  const currentBudgetInfo = useMemo(() => {
+    return AIService.assemblePromptPreview({
       documentName: activeDocument?.name || '当前文档',
       quote: activeQuote,
-      userQuestion: inputVal.trim() || '请解释这段内容的核心含义及背景。',
+      userQuestion: inputVal.trim() || (activeQuote ? '请解释这段内容的核心含义及背景。' : ''),
       history: messages,
+      budget,
     });
-    setPreviewData(data);
+  }, [activeDocument?.name, activeQuote, inputVal, messages, budget]);
+
+  // Open Prompt Preview
+  const handleOpenPreview = () => {
+    setPreviewData(currentBudgetInfo);
     setIsPreviewOpen(true);
   };
 
-  // Handle send question
-  const handleSend = async (customPrompt?: string) => {
+  // Handle send question with optional over-budget bypass check
+  const handleSend = async (customPrompt?: string, forceOverBudget = false) => {
     const prompt = (customPrompt || inputVal).trim();
     if (!prompt && !activeQuote) return;
     if (isGenerating) return;
 
-    const config = getActiveConfig();
     if (!config || !config.baseUrl || !config.model) {
       setIsSettingsOpen(true);
+      return;
+    }
+
+    // Over budget guard
+    if (currentBudgetInfo.isOverBudget && !forceOverBudget) {
+      handleOpenPreview();
       return;
     }
 
@@ -145,7 +158,7 @@ export const ChatPanel: React.FC = () => {
   const handleRetry = () => {
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');
     if (lastUserMsg) {
-      handleSend(lastUserMsg.content);
+      handleSend(lastUserMsg.content, true);
     }
   };
 
@@ -323,20 +336,65 @@ export const ChatPanel: React.FC = () => {
           </div>
         )}
 
-        {/* Toolbar bar above input: Send Preview trigger */}
+        {/* Real-time Over-Budget Banner Warning */}
+        {currentBudgetInfo.isOverBudget && (
+          <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs flex items-center justify-between animate-in fade-in">
+            <div className="flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+              <span className="text-[11px] leading-tight">
+                发送内容预估 <strong>{currentBudgetInfo.estimatedTokens} Tokens</strong>，已超出预算上限 ({currentBudgetInfo.budget})。
+              </span>
+            </div>
+            <button
+              onClick={handleOpenPreview}
+              className="text-[11px] font-medium underline hover:text-red-800 ml-2 flex-shrink-0"
+            >
+              调整范围
+            </button>
+          </div>
+        )}
+
+        {/* Toolbar bar above input: Document name + Real-time Budget progress bar + Send Preview trigger */}
         <div className="flex items-center justify-between px-1 mb-1.5 text-[11px] text-neutral-400">
-          <span>{activeDocument?.name || '当前文档'}</span>
-          <button
-            onClick={handleOpenPreview}
-            className="flex items-center gap-1 text-neutral-500 hover:text-fox-darkOrange hover:underline transition-colors"
-            title="查看完整发送给 AI 的 Prompt 与预估 Tokens"
-          >
-            <Eye className="w-3 h-3" />
-            <span>发送预览</span>
-          </button>
+          <span className="truncate max-w-[140px]">{activeDocument?.name || '当前文档'}</span>
+
+          <div className="flex items-center gap-3">
+            {/* Real-time Budget Indicator */}
+            <button
+              onClick={handleOpenPreview}
+              className={`flex items-center gap-1.5 hover:opacity-80 transition-opacity ${
+                currentBudgetInfo.isOverBudget ? 'text-red-600 font-semibold' : 'text-neutral-500'
+              }`}
+              title={`预算预估: ${currentBudgetInfo.estimatedTokens} / ${currentBudgetInfo.budget} Tokens (${currentBudgetInfo.budgetPercentage}%)`}
+            >
+              <div className="w-12 h-1.5 bg-neutral-200 rounded-full overflow-hidden flex">
+                <div
+                  style={{ width: `${Math.min(100, currentBudgetInfo.budgetPercentage)}%` }}
+                  className={`h-full ${currentBudgetInfo.isOverBudget ? 'bg-red-500' : 'bg-fox-orange'}`}
+                />
+              </div>
+              <span className="text-[10px]">
+                {currentBudgetInfo.estimatedTokens}T
+              </span>
+            </button>
+
+            {/* Preview trigger */}
+            <button
+              onClick={handleOpenPreview}
+              className="flex items-center gap-1 text-neutral-500 hover:text-fox-darkOrange hover:underline transition-colors"
+              title="查看完整发送给 AI 的 Prompt 与预估 Tokens"
+            >
+              <Eye className="w-3 h-3" />
+              <span>发送预览</span>
+            </button>
+          </div>
         </div>
 
-        <div className="relative flex items-end gap-2 border border-neutral-300 focus-within:border-fox-orange rounded-xl px-3 py-2 bg-neutral-50/50 transition-colors">
+        <div className={`relative flex items-end gap-2 border rounded-xl px-3 py-2 bg-neutral-50/50 transition-colors ${
+          currentBudgetInfo.isOverBudget
+            ? 'border-red-300 focus-within:border-red-500'
+            : 'border-neutral-300 focus-within:border-fox-orange'
+        }`}>
           <textarea
             ref={inputRef}
             rows={1}
@@ -364,10 +422,12 @@ export const ChatPanel: React.FC = () => {
             <button
               onClick={() => handleSend()}
               disabled={!inputVal.trim() && !activeQuote}
-              title="发送"
+              title={currentBudgetInfo.isOverBudget ? '超出预算，点击查看并调整' : '发送'}
               className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${
                 inputVal.trim() || activeQuote
-                  ? 'bg-fox-orange hover:bg-fox-darkOrange text-white'
+                  ? currentBudgetInfo.isOverBudget
+                    ? 'bg-red-500 hover:bg-red-600 text-white'
+                    : 'bg-fox-orange hover:bg-fox-darkOrange text-white'
                   : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
               }`}
             >
@@ -383,6 +443,14 @@ export const ChatPanel: React.FC = () => {
           isOpen={isPreviewOpen}
           onClose={() => setIsPreviewOpen(false)}
           previewInfo={previewData}
+          onClearHistory={() => {
+            clearMessages();
+            setIsPreviewOpen(false);
+          }}
+          onRemoveQuote={() => {
+            setActiveQuote(null);
+            setIsPreviewOpen(false);
+          }}
         />
       )}
     </div>

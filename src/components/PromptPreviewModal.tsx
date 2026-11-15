@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { X, Eye, Copy, Check, Compass, FileText, Layers } from 'lucide-react';
+import { X, Eye, Copy, Check, Compass, FileText, Layers, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { PromptPreviewInfo } from '../services/aiService';
 
 interface PromptPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   previewInfo: PromptPreviewInfo;
+  onClearHistory?: () => void;
+  onRemoveQuote?: () => void;
 }
 
 export const PromptPreviewModal: React.FC<PromptPreviewModalProps> = ({
   isOpen,
   onClose,
   previewInfo,
+  onClearHistory,
+  onRemoveQuote,
 }) => {
   const [copied, setCopied] = useState(false);
 
@@ -25,6 +29,8 @@ export const PromptPreviewModal: React.FC<PromptPreviewModalProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const isOver = previewInfo.isOverBudget;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs select-none p-4">
       <div className="bg-white rounded-2xl shadow-2xl border border-neutral-200 w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
@@ -33,8 +39,14 @@ export const PromptPreviewModal: React.FC<PromptPreviewModalProps> = ({
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4 text-fox-orange" />
             <h3 className="text-sm font-semibold text-neutral-800">本次发送内容预览</h3>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-50 text-fox-darkOrange border border-orange-200 font-medium">
-              ~ {previewInfo.estimatedTokens} Tokens
+            <span
+              className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${
+                isOver
+                  ? 'bg-red-50 text-red-600 border-red-200 animate-pulse'
+                  : 'bg-orange-50 text-fox-darkOrange border-orange-200'
+              }`}
+            >
+              ~ {previewInfo.estimatedTokens} / {previewInfo.budget} Tokens
             </span>
           </div>
           <button
@@ -47,6 +59,84 @@ export const PromptPreviewModal: React.FC<PromptPreviewModalProps> = ({
 
         {/* Scrollable Body */}
         <div className="p-5 overflow-y-auto space-y-4 text-xs flex-1 select-text">
+          {/* Budget Progress Bar */}
+          <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-200/80 space-y-2 select-none">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-medium text-neutral-700 flex items-center gap-1.5">
+                {isOver ? (
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                ) : (
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                )}
+                {isOver ? '上下文超出预算' : '预算消耗健康'}
+              </span>
+              <span className={`font-semibold ${isOver ? 'text-red-600 font-bold' : 'text-neutral-600'}`}>
+                {previewInfo.budgetPercentage}% (预估 {previewInfo.estimatedTokens} Tokens)
+              </span>
+            </div>
+
+            {/* Progress Bar with multi-segment breakdown */}
+            <div className="w-full h-2 bg-neutral-200 rounded-full overflow-hidden flex">
+              <div
+                style={{ width: `${Math.min(100, (previewInfo.systemTokens / previewInfo.budget) * 100)}%` }}
+                className="bg-blue-400"
+                title={`系统指令: ~${previewInfo.systemTokens} Tokens`}
+              />
+              <div
+                style={{ width: `${Math.min(100, (previewInfo.userTokens / previewInfo.budget) * 100)}%` }}
+                className="bg-fox-orange"
+                title={`当前选区与提问: ~${previewInfo.userTokens} Tokens`}
+              />
+              <div
+                style={{ width: `${Math.min(100, (previewInfo.historyTokens / previewInfo.budget) * 100)}%` }}
+                className={isOver ? 'bg-red-500' : 'bg-neutral-400'}
+                title={`历史对话: ~${previewInfo.historyTokens} Tokens`}
+              />
+            </div>
+
+            {/* Legend & fast mitigation actions */}
+            <div className="flex items-center justify-between text-[10px] text-neutral-400 pt-1">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 inline-block" /> 指令 ~{previewInfo.systemTokens}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-fox-orange inline-block" /> 选区 ~{previewInfo.userTokens}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className={`w-2 h-2 rounded-full inline-block ${isOver ? 'bg-red-500' : 'bg-neutral-400'}`} /> 历史 ~{previewInfo.historyTokens}
+                </span>
+              </div>
+            </div>
+
+            {/* Over-budget mitigation buttons */}
+            {isOver && (
+              <div className="mt-2 pt-2 border-t border-red-200/60 flex items-center justify-between bg-red-50/50 p-2 rounded-lg text-red-700">
+                <span className="text-[11px] leading-tight">
+                  发送规模已超出限制，建议精简发送范围避免请求被拒或截断：
+                </span>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {previewInfo.historyCount > 0 && onClearHistory && (
+                    <button
+                      onClick={onClearHistory}
+                      className="px-2 py-1 text-[11px] bg-white border border-red-300 text-red-700 hover:bg-red-100 rounded transition-colors"
+                    >
+                      清空历史对话
+                    </button>
+                  )}
+                  {onRemoveQuote && (
+                    <button
+                      onClick={onRemoveQuote}
+                      className="px-2 py-1 text-[11px] bg-white border border-red-300 text-red-700 hover:bg-red-100 rounded transition-colors"
+                    >
+                      移除长选区
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Metadata banner */}
           <div className="flex items-center gap-3 p-2.5 bg-neutral-50 rounded-xl border border-neutral-200/70 text-neutral-600 select-none">
             <div className="flex items-center gap-1.5 truncate">
@@ -83,7 +173,7 @@ export const PromptPreviewModal: React.FC<PromptPreviewModalProps> = ({
 
           {/* Privacy statement note */}
           <p className="text-[10px] text-neutral-400 leading-normal select-none">
-            💡 说明：Fox 仅将上方透明展示的选区切片及所属段落发送给您配置的 AI 服务端点，绝不发送未经您授权的设备数据。
+            💡 说明：Fox 严格贯彻“所见即所发”原则，绝不静默裁剪内容后声称理解全文。如需调整总预算，请至右上角设置面板更改。
           </p>
         </div>
 
