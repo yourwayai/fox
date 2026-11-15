@@ -42,6 +42,11 @@ interface AppState {
   focusInputSignal: number;
   triggerFocusInput: () => void;
 
+  // Quote reverse highlight signal
+  highlightQuoteText: string | null;
+  highlightSignal: number;
+  scrollToQuote: (text: string) => void;
+
   // UI state
   splitRatio: number; // 0.2 to 0.8
   setSplitRatio: (ratio: number) => void;
@@ -209,6 +214,11 @@ export const useAppStore = create<AppState>((set, get) => {
     setFoxEarState: (state) => set({ foxEarState: state }),
     focusInputSignal: 0,
     triggerFocusInput: () => set((s) => ({ focusInputSignal: s.focusInputSignal + 1 })),
+
+    highlightQuoteText: null,
+    highlightSignal: 0,
+    scrollToQuote: (text: string) =>
+      set((s) => ({ highlightQuoteText: text, highlightSignal: s.highlightSignal + 1 })),
 
     splitRatio: 0.38,
     setSplitRatio: (ratio) => set({ splitRatio: ratio }),

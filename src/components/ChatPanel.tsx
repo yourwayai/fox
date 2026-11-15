@@ -15,6 +15,7 @@ import {
   Eye,
   Compass,
   AlertTriangle,
+  LocateFixed,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { FoxMascot } from './FoxMascot';
@@ -39,6 +40,7 @@ export const ChatPanel: React.FC = () => {
     setIsSettingsOpen,
     focusInputSignal,
     triggerFocusInput,
+    scrollToQuote,
   } = useAppStore();
 
   const [inputVal, setInputVal] = useState('');
@@ -204,13 +206,20 @@ export const ChatPanel: React.FC = () => {
         ) : (
           messages.map((m) => (
             <div key={m.id} className="flex flex-col space-y-1.5">
-              {/* User Quote preview card */}
+              {/* User Quote preview card with reverse locator click */}
               {m.quote && (
-                <div className="text-xs border-l-2 border-fox-orange bg-orange-50/70 p-2.5 rounded-r-md text-neutral-600 mb-1">
+                <div
+                  onClick={() => m.quote && scrollToQuote(m.quote.text)}
+                  className="group/quote text-xs border-l-2 border-fox-orange bg-orange-50/70 hover:bg-orange-100/80 p-2.5 rounded-r-md text-neutral-600 mb-1 cursor-pointer transition-colors shadow-2xs"
+                  title="点击右侧平滑定位并高亮原文"
+                >
                   <div className="flex items-center justify-between text-[10px] font-semibold text-fox-darkOrange uppercase mb-1">
                     <span className="flex items-center gap-1">
                       <Quote className="w-3 h-3" />
                       选区引用
+                      <span className="opacity-0 group-hover/quote:opacity-100 text-[10px] text-fox-darkOrange font-normal flex items-center gap-0.5 ml-1 transition-opacity">
+                        <LocateFixed className="w-3 h-3" /> 定位原文
+                      </span>
                     </span>
                     {m.quote.headingPath && (
                       <span className="flex items-center gap-1 text-neutral-400 font-normal truncate max-w-[180px]">
@@ -219,7 +228,7 @@ export const ChatPanel: React.FC = () => {
                       </span>
                     )}
                   </div>
-                  <div className="line-clamp-3 text-neutral-700 italic">
+                  <div className="line-clamp-3 text-neutral-700 italic group-hover/quote:text-neutral-900 transition-colors">
                     "{m.quote.text}"
                   </div>
                 </div>

@@ -31,6 +31,8 @@ export const MarkdownReader: React.FC = () => {
     setActiveQuote,
     addMessage,
     triggerFocusInput,
+    highlightQuoteText,
+    highlightSignal,
   } = useAppStore();
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -119,6 +121,44 @@ export const MarkdownReader: React.FC = () => {
     }, 60);
     return () => clearTimeout(timer);
   }, [activeDocument?.id]);
+
+  // Reverse locator: scroll to quote and pulse highlight
+  useEffect(() => {
+    if (!highlightQuoteText || !containerRef.current) return;
+
+    const container = containerRef.current;
+    const cleanSearch = highlightQuoteText.trim().slice(0, 80).toLowerCase();
+
+    // Clean up previous highlights
+    container.querySelectorAll('.fox-quote-highlight').forEach((el) => {
+      el.classList.remove('fox-quote-highlight');
+    });
+
+    // Find deepest matching element containing the quote text
+    const allElements = Array.from(
+      container.querySelectorAll('.markdown-body p, .markdown-body li, .markdown-body blockquote, .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body pre')
+    );
+
+    let matchEl: HTMLElement | null = null;
+    for (const el of allElements) {
+      const text = el.textContent?.toLowerCase() || '';
+      if (text.includes(cleanSearch)) {
+        matchEl = el as HTMLElement;
+        break;
+      }
+    }
+
+    if (matchEl) {
+      matchEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      matchEl.classList.add('fox-quote-highlight');
+
+      const removeTimer = setTimeout(() => {
+        matchEl?.classList.remove('fox-quote-highlight');
+      }, 2500);
+
+      return () => clearTimeout(removeTimer);
+    }
+  }, [highlightSignal, highlightQuoteText]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
