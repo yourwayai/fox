@@ -8,9 +8,25 @@ const STORAGE_KEYS = {
   READING_SCROLL_TOP: 'fox_reading_scroll_top_',
   RECENT_DOCS: 'fox_recent_docs',
   DOC_CONTENT: 'fox_doc_content_',
+  REDUCE_MOTION: 'fox_reduce_motion',
 };
 
 export class StorageService {
+  public static getReduceMotion(): boolean {
+    try {
+      const val = localStorage.getItem(STORAGE_KEYS.REDUCE_MOTION);
+      if (val !== null) return val === 'true';
+      // Follow system media query by default
+      return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      return false;
+    }
+  }
+
+  public static saveReduceMotion(reduce: boolean): void {
+    localStorage.setItem(STORAGE_KEYS.REDUCE_MOTION, reduce ? 'true' : 'false');
+  }
+
   public static getProviderConfigs(): ProviderConfig[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.PROVIDER_CONFIGS);

@@ -1,5 +1,6 @@
 import React from 'react';
 import { FoxEarState } from '../types';
+import { useAppStore } from '../store/useAppStore';
 
 interface FoxMascotProps {
   earState: FoxEarState;
@@ -14,6 +15,8 @@ export const FoxMascot: React.FC<FoxMascotProps> = ({
   onClick,
   className = '',
 }) => {
+  const { reduceMotion } = useAppStore();
+
   let stateText = '随时可以提问';
   let badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
   let mascotAnim = '';
@@ -84,7 +87,9 @@ export const FoxMascot: React.FC<FoxMascotProps> = ({
         <img
           src="/fox.png"
           alt="Fox Mascot"
-          className={`w-7 h-7 object-contain drop-shadow-xs transition-transform duration-300 group-hover:scale-110 ${mascotAnim}`}
+          className={`w-7 h-7 object-contain drop-shadow-xs transition-transform ${
+            reduceMotion ? '' : `duration-300 group-hover:scale-110 ${mascotAnim}`
+          }`}
         />
       </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, AlertCircle, Loader2, KeyRound } from 'lucide-react';
+import { X, Check, AlertCircle, Loader2, KeyRound, Sparkles } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { ProviderConfig } from '../types';
 import { AIService } from '../services/aiService';
@@ -13,6 +13,8 @@ export const SettingsModal: React.FC = () => {
     setProviderConfigs,
     setActiveConfigId,
     setFoxEarState,
+    reduceMotion,
+    setReduceMotion,
   } = useAppStore();
 
   const [currentConfig, setCurrentConfig] = useState<ProviderConfig>({
@@ -226,6 +228,38 @@ export const SettingsModal: React.FC = () => {
               <span className="text-[10px] text-neutral-400 mt-1 block">
                 用于估算单次发送最大规模，超限时应用主动提醒调整，不静默截断。
               </span>
+            </div>
+          </div>
+
+          {/* Accessibility / Motion preferences (Planning doc 5.5) */}
+          <div className="pt-3 border-t border-neutral-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-[11px] font-medium text-neutral-700 flex items-center gap-1.5 cursor-pointer" onClick={() => setReduceMotion(!reduceMotion)}>
+                  <Sparkles className="w-3.5 h-3.5 text-fox-orange" />
+                  <span>减少动画与动态干扰 (Reduce Motion)</span>
+                </label>
+                <p className="text-[10px] text-neutral-400 mt-0.5">
+                  开启后停用狐狸呼吸/弹跳动画，禁用长文档滚动过渡，专为注重极简与低能耗设计。
+                </p>
+              </div>
+
+              {/* iOS style toggle switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={reduceMotion}
+                onClick={() => setReduceMotion(!reduceMotion)}
+                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  reduceMotion ? 'bg-fox-orange' : 'bg-neutral-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    reduceMotion ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
           </div>
 

@@ -52,16 +52,24 @@ interface AppState {
   setSplitRatio: (ratio: number) => void;
   isSettingsOpen: boolean;
   setIsSettingsOpen: (open: boolean) => void;
+  reduceMotion: boolean;
+  setReduceMotion: (reduce: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => {
   const initialConfigs = StorageService.getProviderConfigs();
   const initialActiveId = StorageService.getActiveConfigId() || initialConfigs[0]?.id || null;
   const initialRecentDocs = StorageService.getRecentDocs();
+  const initialReduceMotion = StorageService.getReduceMotion();
 
   return {
     activeDocument: null,
     recentDocs: initialRecentDocs,
+    reduceMotion: initialReduceMotion,
+    setReduceMotion: (reduce) => {
+      StorageService.saveReduceMotion(reduce);
+      set({ reduceMotion: reduce });
+    },
 
     setActiveDocument: (doc, saveToRecent = true) => {
       set({ activeDocument: doc });

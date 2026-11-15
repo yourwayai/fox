@@ -33,6 +33,7 @@ export const MarkdownReader: React.FC = () => {
     triggerFocusInput,
     highlightQuoteText,
     highlightSignal,
+    reduceMotion,
   } = useAppStore();
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -149,16 +150,19 @@ export const MarkdownReader: React.FC = () => {
     }
 
     if (matchEl) {
-      matchEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      matchEl.scrollIntoView({
+        behavior: reduceMotion ? ('instant' as ScrollBehavior) : 'smooth',
+        block: 'center',
+      });
       matchEl.classList.add('fox-quote-highlight');
 
       const removeTimer = setTimeout(() => {
         matchEl?.classList.remove('fox-quote-highlight');
-      }, 2500);
+      }, reduceMotion ? 1200 : 2500);
 
       return () => clearTimeout(removeTimer);
     }
-  }, [highlightSignal, highlightQuoteText]);
+  }, [highlightSignal, highlightQuoteText, reduceMotion]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
