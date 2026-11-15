@@ -16,6 +16,7 @@ import {
   Compass,
   AlertTriangle,
   LocateFixed,
+  Download,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { FoxMascot } from './FoxMascot';
@@ -164,6 +165,44 @@ export const ChatPanel: React.FC = () => {
     }
   };
 
+  // Export conversation to Markdown note
+  const handleExportChat = () => {
+    if (messages.length === 0) return;
+    const docName = activeDocument?.name || '文档伴读笔记';
+    const dateStr = new Date().toLocaleString('zh-CN');
+
+    let md = `# Fox 伴读问答笔记 · 《${docName}》\n\n`;
+    md += `> 📅 导出时间：${dateStr}  \n`;
+    md += `> 🤖 伴读模型：${config?.model || '默认 AI'}  \n\n`;
+    md += `---\n\n`;
+
+    messages.forEach((m, idx) => {
+      if (m.role === 'user') {
+        md += `### 💬 读者提问 #${Math.floor(idx / 2) + 1}\n\n`;
+        if (m.quote) {
+          md += `> 📍 **参考选区**${m.quote.headingPath ? `（${m.quote.headingPath}）` : ''}：  \n`;
+          md += `> ${m.quote.text.replace(/\n/g, '\n> ')}\n\n`;
+        }
+        md += `${m.content}\n\n`;
+      } else if (m.role === 'assistant') {
+        md += `### 🦊 Fox 回答\n\n`;
+        md += `${m.content}\n\n`;
+        md += `---\n\n`;
+      }
+    });
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const cleanFileName = docName.replace(/\.md$|\.markdown$/i, '');
+    link.download = `Fox问答笔记_${cleanFileName}_${Date.now()}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#FBFBFA] border-r border-neutral-200 select-text">
       {/* Top Header */}
@@ -176,13 +215,22 @@ export const ChatPanel: React.FC = () => {
 
         <div className="flex items-center gap-1.5 select-none">
           {messages.length > 0 && (
-            <button
-              onClick={clearMessages}
-              title="清空当前会话"
-              className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <>
+              <button
+                onClick={handleExportChat}
+                title="导出问答笔记为 Markdown (.md)"
+                className="p-1.5 text-neutral-400 hover:text-fox-darkOrange hover:bg-orange-50 rounded-md transition-colors"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+              <button
+                onClick={clearMessages}
+                title="清空当前会话"
+                className="p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-md transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </>
           )}
           <button
             onClick={() => setIsSettingsOpen(true)}
