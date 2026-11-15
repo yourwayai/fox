@@ -1,7 +1,17 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Upload, Sparkles, PlusCircle, FileText, ArrowDownToLine } from 'lucide-react';
+import {
+  Upload,
+  Sparkles,
+  PlusCircle,
+  FileText,
+  ArrowDownToLine,
+  ChevronDown,
+  Clock,
+  Trash2,
+  Check,
+} from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { SelectionContext } from '../types';
 import { CodeBlock } from './CodeBlock';
@@ -14,13 +24,19 @@ export const MarkdownReader: React.FC = () => {
   const {
     activeDocument,
     setActiveDocument,
-    setScrollProgress,
+    recentDocs,
+    openRecentDocument,
+    removeRecentDocument,
+    setScrollPosition,
     setActiveQuote,
     addMessage,
     triggerFocusInput,
   } = useAppStore();
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isDocDropdownOpen, setIsDocDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const [selectionBox, setSelectionBox] = useState<{
     visible: boolean;
     x: number;
@@ -39,10 +55,11 @@ export const MarkdownReader: React.FC = () => {
       reader.onload = (e) => {
         const content = (e.target?.result as string) || '';
         setActiveDocument({
-          id: `doc_${Date.now()}_${file.name}`,
+          id: `doc_${file.name.replace(/\s+/g, '_')}`,
           name: file.name,
           content,
           scrollProgress: 0,
+          scrollTop: 0,
         });
       };
       reader.readAsText(file);
@@ -75,17 +92,44 @@ export const MarkdownReader: React.FC = () => {
     }
   };
 
-  // Scroll listener for reading progress
+  // Scroll listener for reading progress & exact scrollTop pixel
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
     if (scrollHeight <= clientHeight) {
-      setScrollProgress(100);
+      setScrollPosition(100, scrollTop);
       return;
     }
     const progress = Math.min(100, Math.max(0, (scrollTop / (scrollHeight - clientHeight)) * 100));
-    setScrollProgress(progress);
-  }, [setScrollProgress]);
+    setScrollPosition(progress, scrollTop);
+  }, [setScrollPosition]);
+
+  // Restore exact reading scroll position when activeDocument changes
+  useEffect(() => {
+    if (!containerRef.current || !activeDocument) return;
+    const targetScrollTop = activeDocument.scrollTop || 0;
+    // Small timeout to allow markdown DOM to finish rendering
+    const timer = setTimeout(() => {
+      if (containerRef.current) {
+        containerRef.current.scrollTo({
+          top: targetScrollTop,
+          behavior: 'instant' as ScrollBehavior,
+        });
+      }
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [activeDocument?.id]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDocDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Selection detection with full heading path & surrounding paragraph extraction
   useEffect(() => {
@@ -115,7 +159,7 @@ export const MarkdownReader: React.FC = () => {
 
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.closest('.selection-toolbar')) return;
+      if (target.closest('.selection-toolbar') || target.closest('.doc-dropdown')) return;
       setSelectionBox((prev) => ({ ...prev, visible: false }));
     };
 
@@ -195,14 +239,13 @@ def compute_relevance(query: str, doc_segment: str) -> float:
 
 ---
 
-### 🧭 上下文透明与章节追踪
+### 🧭 章节追踪与精准阅读位置记忆
 
-当您在这一小节选中文字时：
-1. Fox 会**自动定位您所在的小节层级**（例如：\`欢迎使用 Fox 🦊 > 🧭 上下文透明与章节追踪\`）；
-2. 自动抓取选中句子的**前后邻近上下文段落**，作为背景知识提供给 AI；
-3. 点击左侧输入框上方的 **【👁️ 发送预览】**，可以随时查看真实发送给 AI 的 Prompt 和 Token 预估，杜绝盲盒！
+1. **精准阅读位置恢复**：当您向下滚动文档阅读时，Fox 会毫秒级记忆精确到像素的滚动位置；即使切换不同文档，换回来时也会**瞬间恢复上次读到的位置**；
+2. **多文档独立会话**：点击顶部文档名称旁边的下拉箭头，即可在“最近打开的文档”列表中自由切换，每个文档拥有**专属独立的 AI 问答记录**！
 `,
         scrollProgress: 0,
+        scrollTop: 0,
       });
     }
   }, [activeDocument, setActiveDocument]);
@@ -230,18 +273,85 @@ def compute_relevance(query: str, doc_segment: str) -> float:
       )}
 
       {/* Top Header */}
-      <div className="h-12 border-b border-neutral-200 px-6 flex items-center justify-between bg-white/80 backdrop-blur z-10 flex-shrink-0">
-        <div className="flex items-center gap-2 overflow-hidden">
+      <div className="h-12 border-b border-neutral-200 px-6 flex items-center justify-between bg-white/80 backdrop-blur z-20 flex-shrink-0">
+        {/* Document Switcher Dropdown */}
+        <div className="relative flex items-center gap-2 overflow-hidden" ref={dropdownRef}>
           <FileText className="w-4 h-4 text-neutral-500 flex-shrink-0" />
-          <span className="text-sm font-semibold text-neutral-800 truncate">
-            {activeDocument?.name || '未打开文档'}
+
+          <button
+            onClick={() => setIsDocDropdownOpen(!isDocDropdownOpen)}
+            className="group flex items-center gap-1.5 text-sm font-semibold text-neutral-800 hover:text-fox-darkOrange transition-colors max-w-[280px] truncate select-none text-left"
+            title="点击切换最近打开的文档"
+          >
+            <span className="truncate">{activeDocument?.name || '未打开文档'}</span>
+            <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 group-hover:text-fox-darkOrange transition-transform ${isDocDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded select-none">
+            {activeDocument ? `已读 ${Math.round(activeDocument.scrollProgress || 0)}%` : '只读'}
           </span>
-          <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded">
-            只读预览
-          </span>
+
+          {/* Recent Docs Dropdown Menu */}
+          {isDocDropdownOpen && (
+            <div className="doc-dropdown absolute left-0 top-10 w-72 bg-white rounded-xl shadow-xl border border-neutral-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 select-none">
+              <div className="px-3 py-1.5 text-[11px] font-semibold text-neutral-400 flex items-center gap-1 border-b border-neutral-100">
+                <Clock className="w-3.5 h-3.5" />
+                <span>最近阅读的文档 ({recentDocs.length})</span>
+              </div>
+
+              <div className="max-h-60 overflow-y-auto py-1">
+                {recentDocs.length === 0 ? (
+                  <div className="px-3 py-4 text-center text-xs text-neutral-400">
+                    暂无其他历史文档
+                  </div>
+                ) : (
+                  recentDocs.map((doc) => {
+                    const isActive = doc.id === activeDocument?.id;
+                    return (
+                      <div
+                        key={doc.id}
+                        className={`group/item px-3 py-2 flex items-center justify-between text-xs hover:bg-neutral-50 cursor-pointer transition-colors ${
+                          isActive ? 'bg-orange-50/70 text-fox-darkOrange font-medium' : 'text-neutral-700'
+                        }`}
+                        onClick={() => {
+                          openRecentDocument(doc.id);
+                          setIsDocDropdownOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center gap-2 truncate pr-2">
+                          {isActive ? (
+                            <Check className="w-3.5 h-3.5 text-fox-orange flex-shrink-0" />
+                          ) : (
+                            <FileText className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                          )}
+                          <div className="truncate">
+                            <div className="truncate text-xs">{doc.name}</div>
+                            <div className="text-[10px] text-neutral-400">
+                              进度 {Math.round(doc.scrollProgress)}% · 像素 {Math.round(doc.scrollTop)}px
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeRecentDocument(doc.id);
+                          }}
+                          title="从历史中移除"
+                          className="opacity-0 group-hover/item:opacity-100 p-1 text-neutral-400 hover:text-red-500 rounded transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 select-none">
           <input
             type="file"
             ref={fileInputRef}

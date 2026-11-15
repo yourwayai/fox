@@ -1,12 +1,22 @@
 import { create } from 'zustand';
-import { ActiveDocument, SelectionContext, ChatMessage, ProviderConfig, FoxEarState } from '../types';
+import {
+  ActiveDocument,
+  SelectionContext,
+  ChatMessage,
+  ProviderConfig,
+  FoxEarState,
+  RecentDocumentMeta,
+} from '../types';
 import { StorageService } from '../services/storageService';
 
 interface AppState {
   // Document state
   activeDocument: ActiveDocument | null;
-  setActiveDocument: (doc: ActiveDocument | null) => void;
-  setScrollProgress: (progress: number) => void;
+  recentDocs: RecentDocumentMeta[];
+  setActiveDocument: (doc: ActiveDocument | null, saveToRecent?: boolean) => void;
+  openRecentDocument: (docId: string) => void;
+  removeRecentDocument: (docId: string) => void;
+  setScrollPosition: (progress: number, scrollTop: number) => void;
 
   // Selection quote state
   activeQuote: SelectionContext | null;
@@ -42,29 +52,102 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => {
   const initialConfigs = StorageService.getProviderConfigs();
   const initialActiveId = StorageService.getActiveConfigId() || initialConfigs[0]?.id || null;
+  const initialRecentDocs = StorageService.getRecentDocs();
 
   return {
     activeDocument: null,
-    setActiveDocument: (doc) => {
+    recentDocs: initialRecentDocs,
+
+    setActiveDocument: (doc, saveToRecent = true) => {
       set({ activeDocument: doc });
       if (doc) {
         const msgs = StorageService.getMessages(doc.id);
         const progress = StorageService.getReadingProgress(doc.id);
+        const scrollTop = StorageService.getReadingScrollTop(doc.id);
+
+        const updatedDoc: ActiveDocument = {
+          ...doc,
+          scrollProgress: progress || doc.scrollProgress || 0,
+          scrollTop: scrollTop || doc.scrollTop || 0,
+        };
+
         set({
           messages: msgs,
-          activeDocument: { ...doc, scrollProgress: progress },
+          activeDocument: updatedDoc,
         });
+
+        if (saveToRecent) {
+          const meta: RecentDocumentMeta = {
+            id: doc.id,
+            name: doc.name,
+            lastOpenedAt: Date.now(),
+            scrollProgress: progress || 0,
+            scrollTop: scrollTop || 0,
+            contentPreview: doc.content.slice(0, 100),
+          };
+          StorageService.saveRecentDoc(meta, doc.content);
+          set({ recentDocs: StorageService.getRecentDocs() });
+        }
       } else {
         set({ messages: [] });
       }
     },
-    setScrollProgress: (progress) => {
-      const { activeDocument } = get();
+
+    openRecentDocument: (docId: string) => {
+      const recent = get().recentDocs.find((d) => d.id === docId);
+      if (!recent) return;
+
+      const content = StorageService.getDocContent(docId);
+      if (content !== null) {
+        get().setActiveDocument(
+          {
+            id: recent.id,
+            name: recent.name,
+            content,
+            scrollProgress: recent.scrollProgress,
+            scrollTop: recent.scrollTop,
+          },
+          true
+        );
+      }
+    },
+
+    removeRecentDocument: (docId: string) => {
+      StorageService.removeRecentDoc(docId);
+      const nextRecent = StorageService.getRecentDocs();
+      set({ recentDocs: nextRecent });
+      // If currently active doc was removed
+      if (get().activeDocument?.id === docId) {
+        if (nextRecent.length > 0) {
+          get().openRecentDocument(nextRecent[0].id);
+        } else {
+          set({ activeDocument: null, messages: [] });
+        }
+      }
+    },
+
+    setScrollPosition: (progress: number, scrollTop: number) => {
+      const { activeDocument, recentDocs } = get();
       if (activeDocument) {
-        StorageService.saveReadingProgress(activeDocument.id, progress);
+        StorageService.saveReadingPosition(activeDocument.id, progress, scrollTop);
+
         set({
-          activeDocument: { ...activeDocument, scrollProgress: progress },
+          activeDocument: {
+            ...activeDocument,
+            scrollProgress: progress,
+            scrollTop,
+          },
         });
+
+        // Update in recentDocs
+        const meta = recentDocs.find((d) => d.id === activeDocument.id);
+        if (meta) {
+          meta.scrollProgress = progress;
+          meta.scrollTop = scrollTop;
+          meta.lastOpenedAt = Date.now();
+          StorageService.saveRecentDoc(meta);
+          set({ recentDocs: [...recentDocs] });
+        }
       }
     },
 

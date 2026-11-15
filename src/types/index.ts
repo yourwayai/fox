@@ -27,10 +27,20 @@ export interface ChatMessage {
   errorMessage?: string;
 }
 
+export interface RecentDocumentMeta {
+  id: string;
+  name: string;
+  lastOpenedAt: number;
+  scrollProgress: number; // 0 - 100
+  scrollTop: number;      // precise pixel position
+  contentPreview?: string;
+}
+
 export interface ActiveDocument {
   id: string;
   name: string;
   content: string;
   scrollProgress: number; // 0 - 100
+  scrollTop: number;      // precise pixel position
   lastReadPosition?: number;
 }
