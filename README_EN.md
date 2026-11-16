@@ -12,6 +12,10 @@
   <a href="README_EN.md">English</a>
 </p>
 
+<p align="center">
+  <img src="public/screenshot.png" width="920" alt="Fox Interface Screenshot" />
+</p>
+
 ---
 
 ## 🌟 Core Highlights & Features
