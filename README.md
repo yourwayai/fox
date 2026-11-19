@@ -66,11 +66,13 @@ Fox 不绑定任何服务商。内置 DeepSeek、OpenAI 和本地 Ollama 三套�
 
 ## 技术栈
 
-**桌面** · Tauri 2 (Rust 2024)　　**前端** · React 18 · TypeScript · Tailwind CSS　　**状态** · Zustand
-
-**Markdown** · react-markdown · remark-gfm · rehype-slug　　**公式** · KaTeX　　**图表** · Mermaid (动态分块)　　**高亮** · Prism.js
-
-**网络** · 原生 SSE + Tauri HTTP 插件 (桌面端绕过 CORS)　　**存储** · IndexedDB + localStorage 异步适配层
+- **桌面** — Tauri 2 (Rust 2024)
+- **前端** — React 18 · TypeScript · Tailwind CSS
+- **状态** — Zustand
+- **Markdown** — react-markdown · remark-gfm · rehype-slug
+- **公式** — KaTeX　　**图表** — Mermaid (动态分块)　　**高亮** — Prism.js
+- **网络** — 原生 SSE + Tauri HTTP 插件 (桌面端绕过 CORS)
+- **存储** — IndexedDB + localStorage 异步适配层
 
 <br>
 

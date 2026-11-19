@@ -66,11 +66,13 @@ A full-vector SVG fox companion. Its tail rises from -6° to +12° as reading pr
 
 ## Tech Stack
 
-**Desktop** · Tauri 2 (Rust 2024)　　**Frontend** · React 18 · TypeScript · Tailwind CSS　　**State** · Zustand
-
-**Markdown** · react-markdown · remark-gfm · rehype-slug　　**Math** · KaTeX　　**Diagrams** · Mermaid (dynamic chunks)　　**Highlighting** · Prism.js
-
-**Networking** · Native SSE + Tauri HTTP plugin (CORS-free on desktop)　　**Storage** · IndexedDB + localStorage async adapter layer
+- **Desktop** — Tauri 2 (Rust 2024)
+- **Frontend** — React 18 · TypeScript · Tailwind CSS
+- **State** — Zustand
+- **Markdown** — react-markdown · remark-gfm · rehype-slug
+- **Math** — KaTeX　　**Diagrams** — Mermaid (dynamic chunks)　　**Highlighting** — Prism.js
+- **Networking** — Native SSE + Tauri HTTP plugin (CORS-free on desktop)
+- **Storage** — IndexedDB + localStorage async adapter layer
 
 <br>
 
