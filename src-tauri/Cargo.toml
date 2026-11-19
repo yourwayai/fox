@@ -3,8 +3,8 @@ name = "app"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
-license = ""
-repository = ""
+license = "MIT"
+repository = "https://github.com/yourwayai/fox"
 edition = "2024"
 rust-version = "1.90"
 

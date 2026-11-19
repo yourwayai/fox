@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="README.md">简体中文</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="README_EN.md">English</a>
+  <a href="README.md">简体中文</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="README_EN.md">English</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="LICENSE">MIT License</a>
 </p>
 
 <br>
@@ -117,3 +117,9 @@ npm test
 ## Documentation
 
 [Project Planning Document](docs/Fox_Markdown_AI_伴读工具项目规划书.md) — Full product design, security guidelines, and roadmap
+
+<br>
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
