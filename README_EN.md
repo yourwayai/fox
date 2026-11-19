@@ -38,11 +38,20 @@ Fox is not locked to any provider. It ships with one-click presets for DeepSeek,
 
 **Floating TOC & search** — Expandable multi-level outline drawer with live heading sync. `Cmd+F` in-document search with match counter, highlighting, and prev/next navigation.
 
+**Keyboard navigation** — Desktop-grade keyboard shortcuts:
+- `Cmd/Ctrl + O`: Quick open local Markdown file (native desktop dialog or web file picker)
+- `Cmd/Ctrl + B` or `Cmd/Ctrl + T`: Toggle Table of Contents (TOC) drawer
+- `Cmd/Ctrl + ,`: Open Settings / Preferences
+- `Cmd/Ctrl + L`: Seamless focus on the AI chat input
+- `Enter` / `Cmd+Enter`: Send question; `Esc` layered dismiss hierarchy
+
 **Reverse quote locator** — Click a quote card in the chat pane and the reader smoothly scrolls to the original passage with a pulse highlight for easy cross-reference.
 
 ### AI
 
 **Multi-model management** — Save multiple provider configurations and switch freely. Each assistant bubble offers a "re-answer with another model" option for lightweight comparison.
+
+**Key masking & local safety** — Saved API keys are masked (`sk-••••••••1234`) with a deliberate "replace key" unlock flow. Clear security notices confirm keys stay on your machine only.
 
 **Transparent budget** — Live token progress bar plus multi-segment prompt preview (system directives / selection / history). Proactive warning when the budget is exceeded — no silent truncation.
 
@@ -94,9 +103,10 @@ npm run dev
 ```bash
 npm run tauri:dev      # development
 npm run tauri:build    # production bundle
+npm run bundle:dmg     # package production macOS .dmg installer
 ```
 
-**Tests** — 7 automated cases covering TOC parsing, doc IDs, viewport extraction, and storage adapters:
+**Tests** — 8 automated cases covering TOC parsing, doc IDs, viewport extraction, storage adapters, and shortcut handlers:
 
 ```bash
 npm test
@@ -116,7 +126,8 @@ npm test
 
 ## Documentation
 
-[Project Planning Document](docs/Fox_Markdown_AI_伴读工具项目规划书.md) — Full product design, security guidelines, and roadmap
+- [Project Planning Document](docs/Fox_Markdown_AI_伴读工具项目规划书.md) — Full product design, security guidelines, and roadmap
+- [Todo List & Roadmap](docs/TODO.md) — Phase milestones and detailed task checklist
 
 <br>
 
