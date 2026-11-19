@@ -4,10 +4,22 @@ export interface ProviderConfig {
   baseUrl: string;
   apiKey: string;
   model: string;
-  contextBudget: number; // in tokens or chars estimate
+  contextBudget: number; // conservative token budget estimate
 }
 
 export type FoxEarState = 'unconfigured' | 'ready' | 'waiting' | 'generating' | 'error';
+
+export type DocScopeMode = 'full_doc' | 'viewport_section';
+
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+export type PromptActionType = 'explain' | 'analogy' | 'deep_dive' | 'code_review';
+
+export interface TocItem {
+  id: string;
+  text: string;
+  level: number;
+}
 
 export interface SelectionContext {
   id: string;
@@ -23,6 +35,7 @@ export interface ChatMessage {
   createdAt: number;
   status: 'idle' | 'streaming' | 'done' | 'error';
   quote?: SelectionContext;
+  scopeLabel?: string;
   modelName?: string;
   errorMessage?: string;
 }
@@ -30,6 +43,8 @@ export interface ChatMessage {
 export interface RecentDocumentMeta {
   id: string;
   name: string;
+  filePath?: string;
+  contentHash?: string;
   lastOpenedAt: number;
   scrollProgress: number; // 0 - 100
   scrollTop: number;      // precise pixel position
@@ -39,8 +54,9 @@ export interface RecentDocumentMeta {
 export interface ActiveDocument {
   id: string;
   name: string;
+  filePath?: string;
   content: string;
-  scrollProgress: number; // 0 - 100
-  scrollTop: number;      // precise pixel position
-  lastReadPosition?: number;
+  contentHash: string;
+  scrollProgress: number; // initial / restored 0 - 100
+  scrollTop: number;      // initial / restored precise pixel position
 }

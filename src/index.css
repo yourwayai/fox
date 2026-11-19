@@ -4,8 +4,33 @@
 
 @layer base {
   body {
-    @apply m-0 p-0 overflow-hidden text-neutral-800 bg-[#F9F9F8];
+    @apply m-0 p-0 overflow-hidden text-neutral-800 bg-[#F9F9F8] transition-colors duration-150;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  html.dark body {
+    @apply bg-[#141416] text-[#E4E4E7];
+  }
+}
+
+/* Subtle pop-in animation replacing invalid Tailwind v4 utility classes */
+@keyframes foxPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.fox-pop-in {
+  animation: foxPopIn 0.14s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fox-pop-in {
+    animation: none;
   }
 }
 
@@ -78,6 +103,7 @@
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid #E5E7EB;
+  scroll-margin-top: 1rem;
 }
 
 .markdown-body h2 {
@@ -87,6 +113,7 @@
   margin-bottom: 0.75rem;
   padding-bottom: 0.35rem;
   border-bottom: 1px solid #F3F4F6;
+  scroll-margin-top: 1rem;
 }
 
 .markdown-body h3 {
@@ -94,6 +121,16 @@
   font-weight: 600;
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
+  scroll-margin-top: 1rem;
+}
+
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+  scroll-margin-top: 1rem;
 }
 
 .markdown-body p {
@@ -101,7 +138,8 @@
   margin-bottom: 0.75rem;
 }
 
-.markdown-body ul, .markdown-body ol {
+.markdown-body ul,
+.markdown-body ol {
   padding-left: 1.5rem;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
@@ -122,7 +160,6 @@
 
 .markdown-body blockquote {
   border-left: 4px solid #FF7A30;
-  padding-left: 1rem;
   color: #4B5563;
   margin: 1rem 0;
   background: #FFF9F5;
@@ -136,7 +173,8 @@
   margin: 1rem 0;
 }
 
-.markdown-body th, .markdown-body td {
+.markdown-body th,
+.markdown-body td {
   border: 1px solid #E5E7EB;
   padding: 0.5rem 0.75rem;
   text-align: left;
@@ -161,6 +199,56 @@
   border: 0;
   border-top: 1px solid #E5E7EB;
   margin: 2rem 0;
+}
+
+/* Dark mode typography adjustments */
+.dark .markdown-body {
+  color: #D4D4D8;
+}
+
+.dark .markdown-body h1 {
+  color: #F4F4F5;
+  border-bottom-color: #27272A;
+}
+
+.dark .markdown-body h2 {
+  color: #F4F4F5;
+  border-bottom-color: #27272A;
+}
+
+.dark .markdown-body h3,
+.dark .markdown-body h4,
+.dark .markdown-body h5,
+.dark .markdown-body h6 {
+  color: #E4E4E7;
+}
+
+.dark .markdown-body blockquote {
+  background: #251B14;
+  color: #D1D5DB;
+  border-left-color: #FF7A30;
+}
+
+.dark .markdown-body table th,
+.dark .markdown-body table td {
+  border-color: #27272A;
+}
+
+.dark .markdown-body th {
+  background-color: #1F1F23;
+  color: #E4E4E7;
+}
+
+.dark .markdown-body a {
+  color: #FB923C;
+}
+
+.dark .markdown-body a:hover {
+  color: #F97316;
+}
+
+.dark .markdown-body hr {
+  border-top-color: #27272A;
 }
 
 /* Quote reverse locator highlight pulse */
