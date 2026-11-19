@@ -32,6 +32,8 @@ interface AppState {
   setActiveDocument: (doc: ActiveDocument | null, saveToRecent?: boolean) => void;
   openRecentDocument: (docId: string) => Promise<void>;
   openNativeFile: () => Promise<void>;
+  openFileSignal: number;
+  triggerOpenFile: () => void;
   removeRecentDocument: (docId: string) => void;
   setScrollPosition: (progress: number, scrollTop: number) => void;
 
@@ -289,6 +291,15 @@ export const useAppStore = create<AppState>((set, get) => {
         },
         true
       );
+    },
+
+    openFileSignal: 0,
+    triggerOpenFile: () => {
+      if (isTauriApp()) {
+        void get().openNativeFile();
+      } else {
+        set((s) => ({ openFileSignal: s.openFileSignal + 1 }));
+      }
     },
 
     removeRecentDocument: (docId: string) => {

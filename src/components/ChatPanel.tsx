@@ -526,7 +526,7 @@ export const ChatPanel: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsSettingsOpen(true)}
-              title={`当前模型：${config.name} (${config.model}) · 点击管理配置`}
+              title={`当前模型：${config.name} (${config.model}) · 点击管理配置 (Cmd+,)`}
               className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 max-w-[120px] truncate transition-colors"
             >
               {config.model}
@@ -791,15 +791,18 @@ export const ChatPanel: React.FC = () => {
             value={draftQuestion}
             onChange={(e) => setDraftQuestion(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (
+                (e.key === 'Enter' && !e.shiftKey) ||
+                (e.key === 'Enter' && (e.metaKey || e.ctrlKey))
+              ) {
                 e.preventDefault();
                 handlePrimarySend();
               }
             }}
             placeholder={
               activeQuote
-                ? '围绕选中的内容提问… (Enter 直接发送)'
-                : '围绕当前文档提问… (Enter 发送)'
+                ? '围绕选中的内容提问… (Enter / Cmd+Enter 发送)'
+                : '围绕当前文档提问… (Enter / Cmd+Enter 发送)'
             }
             className="flex-1 bg-transparent resize-none text-xs text-neutral-800 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none max-h-28 py-0.5"
           />
@@ -818,7 +821,11 @@ export const ChatPanel: React.FC = () => {
               type="button"
               onClick={handlePrimarySend}
               disabled={!canSendNow}
-              title={currentBudgetInfo.isOverBudget ? '超出预算，点击查看并调整范围' : '发送'}
+              title={
+                currentBudgetInfo.isOverBudget
+                  ? '超出预算，点击查看并调整范围'
+                  : '发送问题 (Enter / Cmd+Enter)'
+              }
               className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${
                 canSendNow
                   ? currentBudgetInfo.isOverBudget

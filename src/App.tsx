@@ -11,7 +11,90 @@ export const App: React.FC = () => {
   const splitRatio = useAppStore((s) => s.splitRatio);
   const setSplitRatio = useAppStore((s) => s.setSplitRatio);
   const setActiveDocument = useAppStore((s) => s.setActiveDocument);
+  const triggerOpenFile = useAppStore((s) => s.triggerOpenFile);
+  const setIsSettingsOpen = useAppStore((s) => s.setIsSettingsOpen);
+  const setIsTocOpen = useAppStore((s) => s.setIsTocOpen);
+  const triggerFocusInput = useAppStore((s) => s.triggerFocusInput);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Global Keyboard Shortcuts (Cmd+O, Cmd+B/T, Cmd+,, Cmd+L, Esc)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey;
+      const target = e.target as HTMLElement;
+      const isInput =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.isContentEditable;
+
+      // Cmd / Ctrl + O -> Open local Markdown file
+      if (isMod && (e.key === 'o' || e.key === 'O')) {
+        e.preventDefault();
+        triggerOpenFile();
+        return;
+      }
+
+      // Cmd / Ctrl + , -> Settings & AI Providers
+      if (isMod && e.key === ',') {
+        e.preventDefault();
+        setIsSettingsOpen(true);
+        return;
+      }
+
+      // Cmd / Ctrl + B or Cmd / Ctrl + T -> Toggle Table of Contents (when not actively typing)
+      if (isMod && (e.key === 'b' || e.key === 'B' || e.key === 't' || e.key === 'T') && !isInput) {
+        e.preventDefault();
+        const currentToc = useAppStore.getState().isTocOpen;
+        setIsTocOpen(!currentToc);
+        return;
+      }
+
+      // Cmd / Ctrl + L -> Focus AI question input
+      if (isMod && (e.key === 'l' || e.key === 'L')) {
+        e.preventDefault();
+        triggerFocusInput();
+        return;
+      }
+
+      // Escape -> Hierarchical layered dismiss
+      if (e.key === 'Escape') {
+        const state = useAppStore.getState();
+        if (state.isSettingsOpen) {
+          e.preventDefault();
+          state.setIsSettingsOpen(false);
+          return;
+        }
+        if (state.isPreviewOpen) {
+          e.preventDefault();
+          state.setIsPreviewOpen(false);
+          return;
+        }
+        if (state.pendingDomainConfirm) {
+          e.preventDefault();
+          state.setPendingDomainConfirm(null);
+          return;
+        }
+        if (state.isTocOpen) {
+          e.preventDefault();
+          state.setIsTocOpen(false);
+          return;
+        }
+        if (state.activeQuote) {
+          e.preventDefault();
+          state.setActiveQuote(null);
+          return;
+        }
+        if (isInput) {
+          target.blur();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, [triggerOpenFile, setIsSettingsOpen, setIsTocOpen, triggerFocusInput]);
 
   // Listen for native OS "open-file" events (CLI argument or Finder double click)
   useEffect(() => {

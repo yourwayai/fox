@@ -220,10 +220,11 @@ export const MarkdownReader: React.FC = () => {
   const reduceMotion = useAppStore((s) => s.reduceMotion);
   const isTocOpen = useAppStore((s) => s.isTocOpen);
   const setIsTocOpen = useAppStore((s) => s.setIsTocOpen);
+  const openFileSignal = useAppStore((s) => s.openFileSignal);
+  const triggerOpenFile = useAppStore((s) => s.triggerOpenFile);
 
   const setActiveDocument = useAppStore((s) => s.setActiveDocument);
   const openRecentDocument = useAppStore((s) => s.openRecentDocument);
-  const openNativeFile = useAppStore((s) => s.openNativeFile);
   const removeRecentDocument = useAppStore((s) => s.removeRecentDocument);
   const setScrollPosition = useAppStore((s) => s.setScrollPosition);
   const setActiveQuote = useAppStore((s) => s.setActiveQuote);
@@ -248,6 +249,13 @@ export const MarkdownReader: React.FC = () => {
     y: number;
     context: SelectionContext | null;
   }>({ visible: false, x: 0, y: 0, context: null });
+
+  // Listen for global open file trigger (e.g. Cmd+O in Web mode)
+  useEffect(() => {
+    if (openFileSignal > 0 && !isTauriApp()) {
+      fileInputRef.current?.click();
+    }
+  }, [openFileSignal]);
 
   // Handle file loading with collision-free ID, filePath and contentHash
   const processFile = useCallback(
@@ -673,7 +681,7 @@ export const MarkdownReader: React.FC = () => {
                 ? 'bg-orange-50 dark:bg-orange-950/50 text-fox-darkOrange dark:text-fox-orange font-semibold'
                 : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
             }`}
-            title="打开文档大纲目录 (TOC)"
+            title={isTocOpen ? '收起大纲 (Cmd+B / Cmd+T)' : '展开大纲 (Cmd+B / Cmd+T)'}
           >
             <ListTree className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />
             <span className="hidden sm:inline">大纲</span>
@@ -697,13 +705,8 @@ export const MarkdownReader: React.FC = () => {
           />
           <button
             type="button"
-            onClick={() => {
-              if (isTauriApp()) {
-                void openNativeFile();
-              } else {
-                fileInputRef.current?.click();
-              }
-            }}
+            onClick={triggerOpenFile}
+            title="打开本地 Markdown 文件 (Cmd+O)"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-md transition-colors"
           >
             <Upload className="w-3.5 h-3.5 text-neutral-500 dark:text-neutral-400" />

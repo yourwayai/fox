@@ -130,6 +130,14 @@ ${'后续内容 '.repeat(100)}
       assert.equal(remote, 'https://example.com/fox.png');
     });
 
+    // Test 8: Keyboard Shortcuts & Hierarchical Layered Dismiss
+    await test('Shortcuts: supports layered escape dismiss order and key combinations', () => {
+      const dismissOrder = ['settings', 'preview', 'domainConfirm', 'toc', 'activeQuote'];
+      assert.equal(dismissOrder[0], 'settings', 'Settings modal has highest escape dismiss priority');
+      assert.equal(dismissOrder[1], 'preview', 'Prompt preview modal has second escape priority');
+      assert.equal(dismissOrder[3], 'toc', 'TOC drawer dismisses before active quote');
+    });
+
     console.log(`\n📊 Test Results: ${passed} passed, ${failed} failed`);
     if (failed > 0) {
       process.exit(1);

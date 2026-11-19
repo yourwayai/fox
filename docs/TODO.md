@@ -18,14 +18,10 @@
   - **结果**：实现已保存凭据自动掩码脱敏（`sk-••••••••1234`）与状态徽章（已就绪），仅点击“更换密钥”时解锁编辑，支持“取消更换”回退；新增隐私合规与未加密提示说明。
   - **涉及文件**：`src/components/SettingsModal.tsx`
 
-- [ ] **3. 伴读高频全局快捷键体系**
+- [x] **3. 伴读高频全局快捷键体系**
   - **目标**：建立桌面伴读常用的全键盘盲操支持。
-  - **清单**：
-    - `Cmd / Ctrl + O`：调起文件选择窗口打开本地 Markdown；
-    - `Cmd / Ctrl + B` 或 `Cmd + T`：快速切换/折叠大纲（TOC）侧边抽屉；
-    - `Cmd / Ctrl + Enter`：在输入框任意位置直接提交问题；
-    - `Esc`：全局层级后退（依次关闭搜索栏 → 关闭大纲抽屉 → 关闭设置弹窗）。
-  - **涉及文件**：`src/App.tsx` · `src/components/ChatPanel.tsx`
+  - **结果**：实现全局统一快捷键：`Cmd/Ctrl+O` 打开本地文件、`Cmd/Ctrl+B` 或 `Cmd/Ctrl+T` 快速切换大纲抽屉、`Cmd/Ctrl+,` 打开设置、`Cmd/Ctrl+L` 聚焦提问、`Enter / Cmd+Enter` 发送提问；实现 `Esc` 键层级防抖后退（设置弹窗 → 预览弹窗 → 域名确认 → 大纲抽屉 → 选区引用 → 失去焦点）。
+  - **涉及文件**：`src/App.tsx` · `src/components/ChatPanel.tsx` · `src/components/MarkdownReader.tsx` · `src/store/useAppStore.ts`
 
 - [ ] **4. 完善 GitHub Actions CI 自动化流水线**
   - **目标**：在云端自动化校验代码质量。
