@@ -1,104 +1,109 @@
 <p align="center">
-  <img src="public/fox.png" width="120" alt="Fox Logo" />
+  <img src="public/fox.png" width="100" alt="Fox" />
 </p>
 
-<h1 align="center">Fox 🦊</h1>
+<h1 align="center">Fox</h1>
 
 <p align="center">
-  <strong>Companions you through every paragraph</strong><br>
-  <sub>Customizable AI endpoints · Markdown reading & Q&A · Desktop & Web</sub>
-</p>
-
-<p align="center">
-  <a href="README.md">简体中文</a> · <a href="README_EN.md">English</a>
+  Markdown AI reading companion — read on the right, ask on the left, never lose your place.
 </p>
 
 <p align="center">
-  <img src="public/screenshot.png" width="860" alt="Fox Interface Screenshot" />
+  <a href="README.md">简体中文</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="README_EN.md">English</a>
 </p>
 
----
+<br>
 
-## ✨ Feature Highlights
+<p align="center">
+  <img src="public/screenshot.png" width="820" alt="Fox Interface" />
+</p>
 
-**Reading Experience**
+<br>
 
-| Feature | Description |
-|---|---|
-| Split workspace | Zed-inspired layout — AI on the left, Markdown on the right; asking never disrupts scroll position |
-| Multi-action selection | Select text to trigger `Explain` / `Analogy` / `Deep Dive` / `Code Review` / `Add to Question` |
-| Recursive clarification | Select jargon within AI replies to ask follow-ups, layer by layer |
-| Floating TOC | Multi-level outline drawer with live heading sync and instant filter |
-| In-doc search | `Cmd+F` with real-time match highlighting, `x/y` counter, prev/next navigation |
-| Reverse quote locator | Click a chat quote card → smooth scroll & pulse highlight on the original passage |
-| Position memory | Pixel-level `scrollTop` restore; each document keeps an isolated AI thread |
+## Why Fox
 
-**AI Capabilities**
+Most AI reading tools either slice your document into chunks before feeding it to a model, or overlay conversations on top of the original text. Fox takes a quieter approach: **the full document stays in the right pane, the conversation lives in the left**, each scrolling independently. Select a passage and Fox surfaces five preset lenses — explain, analogy, deep dive, code review, append to question — sending your query without shifting or flashing the reading view.
 
-| Feature | Description |
-|---|---|
-| OpenAI-compatible | Built-in presets for DeepSeek / OpenAI / Ollama (key-less), multi-config management |
-| Model switch & re-answer | Pick another model beneath any assistant bubble to regenerate |
-| Transparent budget | Live token progress bar + multi-segment prompt preview + over-budget warning |
-| Domain privacy gate | First-time confirmation modal for each new outbound domain |
+Fox is not locked to any provider. It ships with one-click presets for DeepSeek, OpenAI, and local Ollama, but any OpenAI-compatible endpoint works. **API keys are stored locally. Requests go straight to the endpoint you specify — no proxy, no telemetry.**
 
-**Rendering & Theming**
+<br>
 
-| Feature | Description |
-|---|---|
-| KaTeX math | Inline `$...$` and block `$$...$$` |
-| Mermaid diagrams | Dynamically loaded with diagram/source toggle |
-| Syntax highlighting | Prism.js multi-language + language badges + one-click copy |
-| Dark mode | System / Light / Zed-charcoal — three presets |
+## Core Features
 
-**Mascot · Fox Vector Mascot**
+### Reading
 
-Crisp SVG rendering · Tail rises from -6° to +12° with reading progress 0%→100% · Ears map AI state · Reading aura ring · Honors `prefers-reduced-motion`
+**Split workspace** — Zed-style dual-pane layout. Asking a question never disrupts the right-side scroll position. Pixel-level position memory persists across document switches and reloads, with each document maintaining an isolated AI thread.
 
----
+**Multi-action selection** — Select text to surface a floating toolbar: `✨ Explain` · `💡 Analogy` · `🔍 Deep Dive` · `⚡ Code Review` · `➕ Append`. Unfamiliar terms inside AI replies can be selected again for recursive follow-up.
 
-## 🛠 Tech Stack
+**Floating TOC & search** — Expandable multi-level outline drawer with live heading sync. `Cmd+F` in-document search with match counter, highlighting, and prev/next navigation.
 
-| Layer | Choice | Notes |
-|---|---|---|
-| Desktop | **Tauri 2** (Rust) | Native sandbox · file associations · asset protocol |
-| Frontend | **React 18** + TypeScript | Strict-typed components |
-| Styling | **Tailwind CSS** | Atomic design |
-| Markdown | react-markdown + remark-gfm | Standard GFM extensions |
-| Math / Diagrams | KaTeX + Mermaid | Inline formulas · lazy-loaded diagrams |
-| State | **Zustand** | Minimal reactive store |
-| Networking | Native SSE + Tauri HTTP | CORS-free · streaming · abortable |
-| Storage | IndexedDB + localStorage | Async adapters · multi-session isolation |
+**Reverse quote locator** — Click a quote card in the chat pane and the reader smoothly scrolls to the original passage with a pulse highlight for easy cross-reference.
 
----
+### AI
 
-## 🚀 Quickstart
+**Multi-model management** — Save multiple provider configurations and switch freely. Each assistant bubble offers a "re-answer with another model" option for lightweight comparison.
 
-```bash
-git clone https://github.com/yourwayai/fox.git && cd fox
-npm install
+**Transparent budget** — Live token progress bar plus multi-segment prompt preview (system directives / selection / history). Proactive warning when the budget is exceeded — no silent truncation.
 
-# Web (no Rust needed, instant HMR)
-npm run dev
+**Domain privacy gate** — A confirmation modal appears the first time Fox connects to a new external domain, displaying the target host and payload summary.
 
-# Desktop
-npm run tauri:dev      # development
-npm run tauri:build    # production bundle
+### Rendering
+
+**KaTeX math** — Full support for inline `$E=mc^2$` and display-mode `$$...$$` equations.
+
+**Mermaid diagrams** — Dynamically loaded flowcharts, sequence diagrams, and architecture diagrams with a one-click diagram/source toggle.
+
+**Syntax highlighting** — Prism.js multi-language dark theme with language badges and one-click copy.
+
+**Dark mode** — System / Light / Zed-charcoal, three presets.
+
+### Mascot
+
+A full-vector SVG fox companion. Its tail rises from -6° to +12° as reading progress moves from 0% to 100%; ears reflect AI state (relaxed / perked / pulsing / focused / folded); an outer ring rotates with scroll depth. Fully honors `prefers-reduced-motion`.
+
+<br>
+
+## Tech Stack
+
+```
+Desktop      Tauri 2 · Rust 2024 edition
+Frontend     React 18 · TypeScript · Tailwind CSS
+Markdown     react-markdown · remark-gfm · rehype-slug
+Math/Diagrams KaTeX · Mermaid (dynamic split chunks)
+Highlighting Prism.js
+State        Zustand
+Networking   Native SSE + Tauri HTTP plugin (CORS-free on desktop)
+Storage      IndexedDB + localStorage async adapter layer
 ```
 
----
+<br>
 
-## 🧪 Tests
+## Quickstart
 
 ```bash
-npm test   # 7 automated cases: TOC parsing · doc IDs · viewport extraction · storage adapters
+git clone https://github.com/yourwayai/fox.git
+cd fox && npm install
+
+npm run dev          # Web dev server (no Rust required)
+npm run tauri:dev    # Desktop development
+npm run tauri:build  # Desktop production bundle
+
+npm test             # Automated tests (TOC · doc IDs · viewport · storage)
 ```
 
----
+<br>
 
-## 📄 Governance
+## Design Principles
 
-See the [Project Planning Document](docs/Fox_Markdown_AI_伴读工具项目规划书.md) for full specification.
+| Principle | Practice |
+|---|---|
+| **Read-only sandbox** | Never alters source files; blocks unsafe HTML execution |
+| **Privacy first** | Direct calls to user-specified endpoints — zero telemetry, zero proxy |
+| **What you see is what you send** | Prompt preview reveals exactly what reaches the model |
 
-- **Read-only sandbox** — never alters source files; blocks unsafe HTML execution
-- **Privacy first** — direct calls to user-specified endpoints, zero telemetry
+<br>
+
+## Documentation
+
+- [Project Planning Document](docs/Fox_Markdown_AI_伴读工具项目规划书.md) — Full product design, security guidelines, and roadmap

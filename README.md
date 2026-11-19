@@ -1,104 +1,109 @@
 <p align="center">
-  <img src="public/fox.png" width="120" alt="Fox Logo" />
+  <img src="public/fox.png" width="100" alt="Fox" />
 </p>
 
-<h1 align="center">Fox 🦊</h1>
+<h1 align="center">Fox</h1>
 
 <p align="center">
-  <strong>陪你读懂每一段</strong><br>
-  <sub>自定义 AI 服务 · Markdown 阅读与问答 · 桌面 & Web 双形态</sub>
-</p>
-
-<p align="center">
-  <a href="README.md">简体中文</a> · <a href="README_EN.md">English</a>
+  Markdown AI 伴读工具 — 右侧读原文，左侧问 AI，彼此不干扰。
 </p>
 
 <p align="center">
-  <img src="public/screenshot.png" width="860" alt="Fox 界面截图" />
+  <a href="README.md">简体中文</a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="README_EN.md">English</a>
 </p>
 
----
+<br>
 
-## ✨ 特色一览
+<p align="center">
+  <img src="public/screenshot.png" width="820" alt="Fox 界面截图" />
+</p>
 
-**阅读体验**
+<br>
 
-| 功能 | 说明 |
-|---|---|
-| 分栏伴读 | Zed 风格左 AI 右阅读布局，提问不打断滚动位置 |
-| 选区多维预设 | 划词即弹 `解释` / `类比` / `深度推导` / `代码评审` / `加入提问` |
-| 递进追问 | AI 回答中的术语可再次划词追问，层层递进 |
-| 浮动大纲 | 多层级 TOC 抽屉，实时高亮当前章节，支持搜索跳转 |
-| 文档内搜索 | `Cmd+F` 高亮匹配项，前后遍历与计数 |
-| 引用反向定位 | 点击聊天引用卡片 → 右侧平滑滚入原文脉冲高亮 |
-| 阅读位置记忆 | 像素级 `scrollTop` 恢复，多文档各自独立 AI 会话 |
+## 为什么是 Fox
 
-**AI 能力**
+大多数 AI 阅读工具要么把原文裁碎喂给模型，要么把对话覆盖在正文之上。Fox 选择一条更安静的路：**原文完整留在右栏，对话独立在左栏**，两侧各自滚动、互不打断。你划选一段文字，Fox 立刻弹出五种预设维度（解释、类比、推导、代码评审、追加提问），一键发送后右栏不跳、不闪、不丢位。
 
-| 功能 | 说明 |
-|---|---|
-| 兼容 OpenAI 协议 | 内置 DeepSeek / OpenAI / Ollama (免 Key) 一键预设，多配置管理 |
-| 换模型重答 | 每条回答气泡底部可选其他模型重新生成，轻量对比 |
-| 透明预算 | Token 实时进度条 + Prompt 多段预览 + 超额预警 |
-| 域名隐私确认 | 首次连接新外部域名时弹窗确认目标与载荷摘要 |
+Fox 不绑定任何服务商。内置 DeepSeek、OpenAI 和本地 Ollama 三套一键预设，也可以自行填入任何 OpenAI 兼容端点。**API Key 只在本地存储，请求直达你指定的服务端点，零中间代理、零遥测。**
 
-**渲染与主题**
+<br>
 
-| 功能 | 说明 |
-|---|---|
-| KaTeX 公式 | 行内 `$...$` 与独立块 `$$...$$` |
-| Mermaid 图表 | 按需动态加载，支持图表/源码切换 |
-| 代码高亮 | Prism.js 多语言 + 语言徽章 + 一键复制 |
-| 深色模式 | 系统跟随 / 浅色 / Zed 质感深灰三档 |
+## 核心功能
 
-**吉祥物 · Fox Vector Mascot**
+### 阅读
 
-全矢量 SVG 渲染 · 尾巴随阅读进度 0%→100% 从 -6° 收拢到 +12° 舒展 · 耳朵映射 AI 状态 · 阅读光环 · 支持 `prefers-reduced-motion`
+**分栏伴读** — Zed 风格双栏布局。提问时右侧阅读位置纹丝不动，支持像素级滚动位置记忆与跨文档恢复。每份文档绑定独立 AI 会话，互不串扰。
 
----
+**划词多维预设** — 选中文字后弹出浮动工具条：`✨ 解释` · `💡 类比` · `🔍 推导` · `⚡ 代码评审` · `➕ 加入提问`。AI 回答中的陌生术语也可再次划词追问，层层递进。
 
-## 🛠 技术栈
+**浮动大纲 & 搜索** — 右侧可展开多层级 TOC 抽屉，实时高亮当前章节。`Cmd+F` 文档内搜索支持计数、高亮与前后遍历。
 
-| 层次 | 选型 | 说明 |
-|---|---|---|
-| 桌面底座 | **Tauri 2** (Rust) | 原生沙箱 · 文件关联 · 资产协议 |
-| 前端 | **React 18** + TypeScript | 强类型组件化 |
-| 样式 | **Tailwind CSS** | 原子化设计 |
-| Markdown | react-markdown + remark-gfm | GFM 标准扩展 |
-| 公式 / 图表 | KaTeX + Mermaid | 行内公式 · 按需加载图表 |
-| 状态 | **Zustand** | 极简响应式 |
-| 通信 | Native SSE + Tauri HTTP | 绕过 CORS · 流式 · 可中断 |
-| 存储 | IndexedDB + localStorage | 异步适配 · 多会话隔离 |
+**引用反向定位** — 点击左栏聊天中的引用卡片，右侧文档平滑滚入原文位置并脉冲高亮，方便比对验证。
 
----
+### AI
 
-## 🚀 快速开始
+**多模型配置** — 保存多套模型配置并随时切换。每条 AI 回答气泡底部可选择其他已保存模型重新生成（`换模型重答`），轻量横向对比。
 
-```bash
-git clone https://github.com/yourwayai/fox.git && cd fox
-npm install
+**透明预算** — Token 实时进度条 + Prompt 多段拆解预览（系统指令 / 选区 / 历史）。超出预算主动预警，杜绝静默截断。
 
-# Web（免 Rust 依赖，秒级热更新）
-npm run dev
+**域名隐私确认** — 首次向新外部域名发请求时弹出确认弹窗，显示目标主机与载荷摘要，支持一键信任。
 
-# 桌面端
-npm run tauri:dev      # 开发
-npm run tauri:build    # 打包
+### 渲染
+
+**KaTeX 数学公式** — 行内 `$E=mc^2$` 与独立块 `$$...$$` 完整支持。
+
+**Mermaid 图表** — 动态按需加载流程图、时序图、架构图，支持一键切换图表与源码视图。
+
+**代码高亮** — Prism.js 多语言深色主题 + 语言徽章 + 一键复制。
+
+**深色模式** — 系统跟随 / 浅色 / Zed 质感深灰，三档切换。
+
+### 吉祥物
+
+全矢量 SVG 狐狸伴读形象。尾巴随阅读进度 0 → 100% 从 -6° 收拢到 +12° 舒展，耳朵映射 AI 状态（放松 / 竖耳 / 微动 / 专注 / 低垂），外圈光环跟随阅读百分比旋转。完整支持 `prefers-reduced-motion`。
+
+<br>
+
+## 技术栈
+
+```
+桌面底座   Tauri 2 · Rust 2024 edition
+前端       React 18 · TypeScript · Tailwind CSS
+Markdown   react-markdown · remark-gfm · rehype-slug
+公式/图表  KaTeX · Mermaid（动态分块加载）
+代码高亮   Prism.js
+状态管理   Zustand
+网络通信   原生 SSE + Tauri HTTP 插件（桌面端绕过 CORS）
+存储       IndexedDB + localStorage 异步适配层
 ```
 
----
+<br>
 
-## 🧪 测试
+## 快速开始
 
 ```bash
-npm test   # 7 项自动化用例：TOC 解析 · 文档 ID · 视口截取 · 存储适配
+git clone https://github.com/yourwayai/fox.git
+cd fox && npm install
+
+npm run dev          # Web 开发服务器（免 Rust 依赖）
+npm run tauri:dev    # 桌面端开发
+npm run tauri:build  # 桌面端打包
+
+npm test             # 自动化测试（TOC · 文档 ID · 视口截取 · 存储适配）
 ```
 
----
+<br>
 
-## 📄 协议与规范
+## 设计原则
 
-详见 [项目规划书](docs/Fox_Markdown_AI_伴读工具项目规划书.md)
+| 原则 | 实践 |
+|---|---|
+| **只读沙箱** | 不修改原文档，禁用危险 HTML 执行 |
+| **隐私优先** | 直连用户端点，零遥测、零中间代理 |
+| **所见即所发** | Prompt 预览透视实际发送内容，拒绝黑盒 |
 
-- **只读沙箱** — 不修改原文档，禁用危险 HTML 执行
-- **隐私优先** — 直连用户指定端点，零遥测
+<br>
+
+## 文档
+
+- [项目规划书](docs/Fox_Markdown_AI_伴读工具项目规划书.md) — 完整产品设计、安全红线与路线图
