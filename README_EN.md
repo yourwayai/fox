@@ -66,16 +66,11 @@ A full-vector SVG fox companion. Its tail rises from -6° to +12° as reading pr
 
 ## Tech Stack
 
-```
-Desktop      Tauri 2 · Rust 2024 edition
-Frontend     React 18 · TypeScript · Tailwind CSS
-Markdown     react-markdown · remark-gfm · rehype-slug
-Math/Diagrams KaTeX · Mermaid (dynamic split chunks)
-Highlighting Prism.js
-State        Zustand
-Networking   Native SSE + Tauri HTTP plugin (CORS-free on desktop)
-Storage      IndexedDB + localStorage async adapter layer
-```
+**Desktop** · Tauri 2 (Rust 2024)　　**Frontend** · React 18 · TypeScript · Tailwind CSS　　**State** · Zustand
+
+**Markdown** · react-markdown · remark-gfm · rehype-slug　　**Math** · KaTeX　　**Diagrams** · Mermaid (dynamic chunks)　　**Highlighting** · Prism.js
+
+**Networking** · Native SSE + Tauri HTTP plugin (CORS-free on desktop)　　**Storage** · IndexedDB + localStorage async adapter layer
 
 <br>
 
@@ -84,26 +79,39 @@ Storage      IndexedDB + localStorage async adapter layer
 ```bash
 git clone https://github.com/yourwayai/fox.git
 cd fox && npm install
+```
 
-npm run dev          # Web dev server (no Rust required)
-npm run tauri:dev    # Desktop development
-npm run tauri:build  # Desktop production bundle
+**Web** — no Rust required, instant HMR:
 
-npm test             # Automated tests (TOC · doc IDs · viewport · storage)
+```bash
+npm run dev
+```
+
+**Desktop** — requires the Rust toolchain:
+
+```bash
+npm run tauri:dev      # development
+npm run tauri:build    # production bundle
+```
+
+**Tests** — 7 automated cases covering TOC parsing, doc IDs, viewport extraction, and storage adapters:
+
+```bash
+npm test
 ```
 
 <br>
 
 ## Design Principles
 
-| Principle | Practice |
-|---|---|
-| **Read-only sandbox** | Never alters source files; blocks unsafe HTML execution |
-| **Privacy first** | Direct calls to user-specified endpoints — zero telemetry, zero proxy |
-| **What you see is what you send** | Prompt preview reveals exactly what reaches the model |
+> **Read-only sandbox** — never alters source files; blocks unsafe HTML execution
+>
+> **Privacy first** — direct calls to user-specified endpoints, zero telemetry, zero proxy
+>
+> **What you see is what you send** — prompt preview reveals exactly what reaches the model
 
 <br>
 
 ## Documentation
 
-- [Project Planning Document](docs/Fox_Markdown_AI_伴读工具项目规划书.md) — Full product design, security guidelines, and roadmap
+[Project Planning Document](docs/Fox_Markdown_AI_伴读工具项目规划书.md) — Full product design, security guidelines, and roadmap

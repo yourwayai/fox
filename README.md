@@ -66,16 +66,11 @@ Fox 不绑定任何服务商。内置 DeepSeek、OpenAI 和本地 Ollama 三套�
 
 ## 技术栈
 
-```
-桌面底座   Tauri 2 · Rust 2024 edition
-前端       React 18 · TypeScript · Tailwind CSS
-Markdown   react-markdown · remark-gfm · rehype-slug
-公式/图表  KaTeX · Mermaid（动态分块加载）
-代码高亮   Prism.js
-状态管理   Zustand
-网络通信   原生 SSE + Tauri HTTP 插件（桌面端绕过 CORS）
-存储       IndexedDB + localStorage 异步适配层
-```
+**桌面** · Tauri 2 (Rust 2024)　　**前端** · React 18 · TypeScript · Tailwind CSS　　**状态** · Zustand
+
+**Markdown** · react-markdown · remark-gfm · rehype-slug　　**公式** · KaTeX　　**图表** · Mermaid (动态分块)　　**高亮** · Prism.js
+
+**网络** · 原生 SSE + Tauri HTTP 插件 (桌面端绕过 CORS)　　**存储** · IndexedDB + localStorage 异步适配层
 
 <br>
 
@@ -84,26 +79,39 @@ Markdown   react-markdown · remark-gfm · rehype-slug
 ```bash
 git clone https://github.com/yourwayai/fox.git
 cd fox && npm install
+```
 
-npm run dev          # Web 开发服务器（免 Rust 依赖）
-npm run tauri:dev    # 桌面端开发
-npm run tauri:build  # 桌面端打包
+**Web** — 免 Rust 依赖，秒级热更新：
 
-npm test             # 自动化测试（TOC · 文档 ID · 视口截取 · 存储适配）
+```bash
+npm run dev
+```
+
+**桌面端** — 需要 Rust 工具链：
+
+```bash
+npm run tauri:dev      # 开发调试
+npm run tauri:build    # 生产打包
+```
+
+**测试** — 7 项自动化用例覆盖 TOC 解析、文档 ID、视口截取与存储适配：
+
+```bash
+npm test
 ```
 
 <br>
 
 ## 设计原则
 
-| 原则 | 实践 |
-|---|---|
-| **只读沙箱** | 不修改原文档，禁用危险 HTML 执行 |
-| **隐私优先** | 直连用户端点，零遥测、零中间代理 |
-| **所见即所发** | Prompt 预览透视实际发送内容，拒绝黑盒 |
+> **只读沙箱** — 不修改原文档，禁用危险 HTML 执行
+>
+> **隐私优先** — 直连用户端点，零遥测、零中间代理
+>
+> **所见即所发** — Prompt 预览透视实际发送内容，拒绝黑盒
 
 <br>
 
 ## 文档
 
-- [项目规划书](docs/Fox_Markdown_AI_伴读工具项目规划书.md) — 完整产品设计、安全红线与路线图
+[项目规划书](docs/Fox_Markdown_AI_伴读工具项目规划书.md) — 完整产品设计、安全红线与路线图
