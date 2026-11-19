@@ -23,9 +23,10 @@
   - **结果**：实现全局统一快捷键：`Cmd/Ctrl+O` 打开本地文件、`Cmd/Ctrl+B` 或 `Cmd/Ctrl+T` 快速切换大纲抽屉、`Cmd/Ctrl+,` 打开设置、`Cmd/Ctrl+L` 聚焦提问、`Enter / Cmd+Enter` 发送提问；实现 `Esc` 键层级防抖后退（设置弹窗 → 预览弹窗 → 域名确认 → 大纲抽屉 → 选区引用 → 失去焦点）。
   - **涉及文件**：`src/App.tsx` · `src/components/ChatPanel.tsx` · `src/components/MarkdownReader.tsx` · `src/store/useAppStore.ts`
 
-- [ ] **4. 完善 GitHub Actions CI 自动化流水线**
+- [x] **4. 完善 GitHub Actions CI 自动化流水线**
   - **目标**：在云端自动化校验代码质量。
-  - **验收**：在 `.github/workflows/build.yml` 中加入 `npm test` 步骤，PR 和 Push 时自动执行 7 项核心用例断言。
+  - **结果**：在 `.github/workflows/build.yml` 中接入自动化测试套件（`npm test`），覆盖全部 8 项关键自动化测试用例，并在推送到 `main` 分支或提交 Pull Request 时自动化运行测试及构建校验。
+  - **涉及文件**：`.github/workflows/build.yml`
 
 ---
 
@@ -75,4 +76,4 @@
 - [x] **交互与安全**：单条 `[换模型重答]`、首次外部域名确认弹窗、导出 Markdown 笔记
 - [x] **Fox 矢量吉祥物**：原生 SVG 渲染、尾巴旋转映射阅读进度、耳朵状态映射、减弱动画模式
 - [x] **桌面化底座**：Tauri 2 配置、CORS-free 原生网络、本地相对图片解析、文件关联与 Finder 参数
-- [x] **质量与规范**：`npm test` 自动化测试网（7/7）、MIT 开源协议、双语 README 精简重构
+- [x] **质量与规范**：`npm test` 自动化测试网（8/8）、CI 自动化测试与构建校验、MIT 开源协议、双语 README 精简重构
