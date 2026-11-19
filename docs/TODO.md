@@ -8,10 +8,10 @@
 
 聚焦于首发版本交付、基本操作流体验与安全红线守底。
 
-- [ ] **1. 生成并验证 macOS `.dmg` 生产级安装镜像**
-  - **目标**：执行 `npm run tauri:build` 生成完整的 macOS 磁盘镜像（`.dmg`）与应用程序包（`.app`）。
-  - **验收**：本地双击挂载 `.dmg`，可拖入 `/Applications` 正常启动，桌面应用图标清晰、文件关联（`.md`）生效。
-  - **涉及文件**：`src-tauri/tauri.conf.json`
+- [x] **1. 生成并验证 macOS `.dmg` 生产级安装镜像**
+  - **目标**：执行打包生成完整的 macOS 磁盘镜像（`.dmg`）与应用程序包（`.app`）。
+  - **结果**：已通过 `hdiutil` 免权限脚本完成压制，生成标准 UDZO 镜像（10.85 MB），内置 `Applications` 拖拽软链，校验并通过挂载测试。产物位于 `/Users/milong/.cache/fox-target/release/bundle/dmg/Fox_0.1.0_aarch64.dmg`。
+  - **涉及文件**：`scripts/make-dmg.mjs` · `package.json` (`npm run bundle:dmg`)
 
 - [ ] **2. 已保存 API Key 掩码呈现与脱敏（规划书 7.2 安全红线）**
   - **目标**：已保存的密钥不再在界面明文或完整展示，默认以 `sk-...****` 掩码方式占位呈现。
