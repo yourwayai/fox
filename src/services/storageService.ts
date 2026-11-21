@@ -3,6 +3,14 @@ import { DEFAULT_PROMPT_ACTIONS } from '../utils/contextExtractor';
 import { IStorageAdapter } from './storage/types';
 import { LocalStorageAdapter } from './storage/localStorageAdapter';
 import { IndexedDBAdapter } from './storage/indexedDBAdapter';
+import {
+  isTauriApp,
+  isKeychainSupported,
+  saveSecureCredential,
+  getSecureCredential,
+  deleteSecureCredential,
+  KEYCHAIN_PLACEHOLDER,
+} from '../utils/tauriBridge';
 
 const localFallback = new LocalStorageAdapter();
 const idbAdapter = new IndexedDBAdapter();
@@ -74,9 +82,10 @@ class MemoryCache {
 
 const memory = new MemoryCache();
 
-// Initialize async storage in background and hydrate IndexedDB
 let isInitialized = false;
-const initPromise = (async () => {
+let initPromise: Promise<void> | null = null;
+
+async function initAsyncStorage(): Promise<void> {
   try {
     await idbAdapter.init();
     currentAdapter = idbAdapter;
@@ -93,12 +102,16 @@ const initPromise = (async () => {
         await idbAdapter.saveRecentDoc(doc, content);
       }
     }
+    // Hydrate OS Keychain credentials in desktop mode
+    await StorageService.hydrateSecureCredentials().catch((e) => {
+      console.warn('[StorageService] Failed to hydrate secure credentials:', e);
+    });
     isInitialized = true;
   } catch (err) {
     console.warn('[StorageService] Falling back to LocalStorageAdapter:', err);
     currentAdapter = localFallback;
   }
-})();
+}
 
 export class StorageService {
   public static isReady(): boolean {
@@ -139,14 +152,87 @@ export class StorageService {
     currentAdapter.saveReduceMotion(reduce).catch(() => {});
   }
 
+  /**
+   * Check if OS Keychain / Credential Manager is available in current environment
+   */
+  public static async isKeychainAvailable(): Promise<boolean> {
+    return await isKeychainSupported();
+  }
+
+  /**
+   * Asynchronously hydrate real API keys from OS Keychain in desktop mode.
+   * Also migrates any legacy unencrypted keys from local storage to Keychain.
+   */
+  public static async hydrateSecureCredentials(): Promise<boolean> {
+    if (!isTauriApp()) return false;
+    const isSupported = await isKeychainSupported();
+    if (!isSupported) return false;
+
+    let hasUpdates = false;
+    for (const config of memory.providerConfigs) {
+      const keyId = `api_key_${config.id}`;
+      if (config.apiKey && config.apiKey !== KEYCHAIN_PLACEHOLDER) {
+        // Legacy plain key stored in local storage -> migrate to Keychain
+        await saveSecureCredential(keyId, config.apiKey);
+        hasUpdates = true;
+      } else {
+        // Stored as placeholder or empty -> retrieve secret from Keychain
+        const secret = await getSecureCredential(keyId);
+        if (secret) {
+          config.apiKey = secret;
+          hasUpdates = true;
+        }
+      }
+    }
+
+    if (hasUpdates) {
+      // Re-save sanitized configs to disk storage to purge any migrated keys from plain storage
+      const sanitized = memory.providerConfigs.map((c) => ({
+        ...c,
+        apiKey: c.apiKey ? KEYCHAIN_PLACEHOLDER : '',
+      }));
+      localFallback.saveProviderConfigs(sanitized);
+      currentAdapter.saveProviderConfigs(sanitized).catch(() => {});
+    }
+
+    return hasUpdates;
+  }
+
+  /**
+   * Remove credential from OS Keychain when a config is deleted
+   */
+  public static async deleteSecureCredentialForConfig(configId: string): Promise<void> {
+    if (isTauriApp()) {
+      await deleteSecureCredential(`api_key_${configId}`);
+    }
+  }
+
   public static getProviderConfigs(): ProviderConfig[] {
     return memory.providerConfigs;
   }
 
   public static saveProviderConfigs(configs: ProviderConfig[]): void {
     memory.providerConfigs = configs;
-    localFallback.saveProviderConfigs(configs);
-    currentAdapter.saveProviderConfigs(configs).catch(() => {});
+    if (isTauriApp()) {
+      // Async persist keys to native Keychain
+      for (const cfg of configs) {
+        if (cfg.apiKey && cfg.apiKey !== KEYCHAIN_PLACEHOLDER) {
+          saveSecureCredential(`api_key_${cfg.id}`, cfg.apiKey).catch((err) => {
+            console.error(`[StorageService] Failed to save key to Keychain for ${cfg.id}:`, err);
+          });
+        }
+      }
+      // Sanitize disk storage so raw secrets are not written unencrypted
+      const sanitized = configs.map((c) => ({
+        ...c,
+        apiKey: c.apiKey ? KEYCHAIN_PLACEHOLDER : '',
+      }));
+      localFallback.saveProviderConfigs(sanitized);
+      currentAdapter.saveProviderConfigs(sanitized).catch(() => {});
+    } else {
+      localFallback.saveProviderConfigs(configs);
+      currentAdapter.saveProviderConfigs(configs).catch(() => {});
+    }
   }
 
   public static getActiveConfigId(): string | null {
@@ -333,3 +419,7 @@ export class StorageService {
     currentAdapter.removeRecentDoc(documentId).catch(() => {});
   }
 }
+
+// Start async initialization
+initPromise = initAsyncStorage();
+

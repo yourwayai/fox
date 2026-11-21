@@ -7,7 +7,7 @@
 | 阶段 | 范围定位 | 任务数 | 完成度 | 当前状态 |
 | :--- | :--- | :---: | :---: | :---: |
 | **Phase A** | 生产可用与交付闭环（Task 1 ~ 4） | 4 / 4 | **100%** | ✅ **已全部完成** |
-| **Phase B** | 安全加固与体验升级（Task 5 ~ 8） | 2 / 4 | **50%** | 🔄 **进行中（已完成 Task 5、Task 6，待开始 Task 7）** |
+| **Phase B** | 安全加固与体验升级（Task 5 ~ 8） | 3 / 4 | **75%** | 🔄 **进行中（已完成 Task 5、Task 6、Task 7，待开始 Task 8）** |
 | **Phase C** | 空间化组织与进阶演进（Task 9 ~ 11） | 0 / 3 | **0%** | 📋 长期候选池 |
 
 ---
@@ -52,10 +52,15 @@
   - **结果**：设置中心全新升级三标签页布局（AI 模型与服务、划选指令预设、外观与隐私）。新增划选指令管理面板，支持：自由新增/编辑/删除自定义指令（支持标签、Prompt 模板、专属图标与显示开关）；提供内置指令开关与一键恢复默认；提供“翻译”、“要点”、“润色”等常用指令一键添加灵感卡片；划选浮动工具栏支持动态自适应渲染与流式问答触发；自动化测试网扩展至 10 项全过。
   - **涉及文件**：`src/types/index.ts` · `src/utils/contextExtractor.ts` · `src/services/storageService.ts` · `src/store/useAppStore.ts` · `src/components/MarkdownReader.tsx` · `src/components/SettingsModal.tsx`
 
-- [ ] **7. 桌面端系统原生 Keychain / 凭据库密钥托管**
+- [x] **7. 桌面端系统原生 Keychain / 凭据库密钥托管（规划书 7.2 安全红线）**
   - **目标**：Tauri 原生底座接入系统级安全凭据库（macOS Keychain / Windows Credential Manager）。
-  - **验收**：API Key 真正脱离网页存储层，在桌面环境下写入 OS 系统凭据保险库，断网或重置浏览器存储不丢 Key。
-  - **涉及文件**：`src-tauri/Cargo.toml` · `src/utils/tauriBridge.ts`
+  - **结果**：
+    - 在 Rust 后端（`src-tauri`）接入 `keyring` 凭据库，注册 `save_credential`、`get_credential`、`delete_credential`、`is_keychain_available` 原生系统调用命令，并通过 `cargo test` 验证密钥生命周期闭环。
+    - 前端封装 `tauriBridge.ts` 提供完善的凭据读写与 Web 优雅降级能力。
+    - `StorageService` 与 `useAppStore` 联动：桌面模式下 API Key 真正脱离网页存储层写入系统 Keychain，向浏览器/磁盘存储（localStorage / IndexedDB）写入 `[KEYCHAIN_SECURED]` 占位标记；启动时自动水合解密；自动平滑迁移存量明文 Key；删除配置时同步从 Keychain 抹除。
+    - `SettingsModal` 区分展示“钥匙串保护 (macOS Keychain)”与“本地沙箱 (Web 模式)”徽章及安全透明度说明。
+    - 自动化测试套件扩充至 11 项并全数通过。
+  - **涉及文件**：`src-tauri/Cargo.toml` · `src-tauri/src/lib.rs` · `src/utils/tauriBridge.ts` · `src/services/storageService.ts` · `src/services/aiService.ts` · `src/store/useAppStore.ts` · `src/components/SettingsModal.tsx` · `scripts/run-tests.mjs`
 
 - [ ] **8. GitHub Actions 多平台自动发版（Release Workflow）**
   - **目标**：在打 Git Tag（如 `v0.1.0`）时，通过 GitHub Actions 自动交叉编译生成 macOS (`.dmg`) 与 Windows (`.msi` / `.exe`) 安装包并发布到 GitHub Releases。
@@ -84,4 +89,4 @@
 - [x] **交互与安全**：单条 `[换模型重答]`、首次外部域名确认弹窗、导出 Markdown 笔记
 - [x] **Fox 矢量吉祥物**：原生 SVG 渲染、尾巴旋转映射阅读进度、耳朵状态映射、减弱动画模式
 - [x] **桌面化底座**：Tauri 2 配置、CORS-free 原生网络、本地相对图片解析、文件关联与 Finder 参数
-- [x] **质量与规范**：`npm test` 自动化测试网（10/10）、CI 自动化测试与构建校验、MIT 开源协议、双语 README 精简重构
+- [x] **质量与规范**：`npm test` 自动化测试网（11/11）、CI 自动化测试与构建校验、MIT 开源协议、双语 README 精简重构

@@ -51,7 +51,7 @@ Fox is not locked to any provider. It ships with one-click presets for DeepSeek,
 
 **Multi-model management** — Save multiple provider configurations and switch freely. Each assistant bubble offers a "re-answer with another model" option for lightweight comparison.
 
-**Key masking & local safety** — Saved API keys are masked (`sk-••••••••1234`) with a deliberate "replace key" unlock flow. Clear security notices confirm keys stay on your machine only.
+**Key masking & Keychain vault** — Saved API keys are masked (`sk-••••••••1234`) with a deliberate "replace key" unlock flow. In desktop mode, keys are securely hosted in the OS native vault (macOS Keychain / OS Credential Manager) and isolated from web storage. All network requests connect directly to the model provider with zero telemetry.
 
 **Transparent budget** — Live token progress bar plus multi-segment prompt preview (system directives / selection / history). Proactive warning when the budget is exceeded — no silent truncation.
 

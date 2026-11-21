@@ -8,6 +8,79 @@ export function isTauriApp(): boolean {
   }
 }
 
+export const FOX_KEYCHAIN_SERVICE = 'ai.yourway.fox';
+export const KEYCHAIN_PLACEHOLDER = '[KEYCHAIN_SECURED]';
+
+/**
+ * Check if OS Keychain / Credential Manager is available in current environment
+ */
+export async function isKeychainSupported(): Promise<boolean> {
+  if (!isTauriApp()) return false;
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    return await invoke<boolean>('is_keychain_available');
+  } catch (err) {
+    console.warn('[tauriBridge] isKeychainSupported check failed:', err);
+    return false;
+  }
+}
+
+/**
+ * Save secret credential into OS Keychain / Credential Manager
+ */
+export async function saveSecureCredential(key: string, value: string): Promise<boolean> {
+  if (!isTauriApp() || !key) return false;
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('save_credential', {
+      service: FOX_KEYCHAIN_SERVICE,
+      key,
+      value,
+    });
+    return true;
+  } catch (err) {
+    console.error(`[tauriBridge] Failed to save credential for key "${key}":`, err);
+    return false;
+  }
+}
+
+/**
+ * Get secret credential from OS Keychain / Credential Manager
+ */
+export async function getSecureCredential(key: string): Promise<string | null> {
+  if (!isTauriApp() || !key) return null;
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const cred = await invoke<string | null>('get_credential', {
+      service: FOX_KEYCHAIN_SERVICE,
+      key,
+    });
+    return cred;
+  } catch (err) {
+    console.error(`[tauriBridge] Failed to get credential for key "${key}":`, err);
+    return null;
+  }
+}
+
+/**
+ * Delete secret credential from OS Keychain / Credential Manager
+ */
+export async function deleteSecureCredential(key: string): Promise<boolean> {
+  if (!isTauriApp() || !key) return false;
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    await invoke('delete_credential', {
+      service: FOX_KEYCHAIN_SERVICE,
+      key,
+    });
+    return true;
+  } catch (err) {
+    console.error(`[tauriBridge] Failed to delete credential for key "${key}":`, err);
+    return false;
+  }
+}
+
+
 /**
  * Open native system file picker to select a Markdown file
  */

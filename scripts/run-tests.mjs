@@ -36,7 +36,16 @@ async function main() {
     } = await server.ssrLoadModule('./src/utils/contextExtractor.ts');
 
     const { StorageService } = await server.ssrLoadModule('./src/services/storageService.ts');
-    const { resolveMarkdownImageSrc } = await server.ssrLoadModule('./src/utils/tauriBridge.ts');
+    const {
+      resolveMarkdownImageSrc,
+      FOX_KEYCHAIN_SERVICE,
+      KEYCHAIN_PLACEHOLDER,
+      isKeychainSupported,
+      saveSecureCredential,
+      getSecureCredential,
+      deleteSecureCredential,
+    } = await server.ssrLoadModule('./src/utils/tauriBridge.ts');
+    const { AIService } = await server.ssrLoadModule('./src/services/aiService.ts');
     const {
       isSafeLinkHref,
       isRemoteImageUrl,
@@ -214,6 +223,68 @@ ${'后续内容 '.repeat(100)}
       // Reset to defaults
       const resetList = StorageService.resetPromptActions();
       assert.equal(resetList.length, 4);
+    });
+
+    // Test 11: OS Keychain / Credential Vault Integration & Web Fallback (Task 7)
+    await test('Keychain: manages native credential contract, placeholders, and graceful web fallback', async () => {
+      // Contract & service constants
+      assert.equal(FOX_KEYCHAIN_SERVICE, 'ai.yourway.fox', 'Service namespace matches specification');
+      assert.equal(KEYCHAIN_PLACEHOLDER, '[KEYCHAIN_SECURED]', 'Placeholder flag matches specification');
+
+      // Non-tauri / Web environment fallback safety
+      const supported = await isKeychainSupported();
+      assert.equal(supported, false, 'Non-Tauri SSR / Web environment correctly reports keychain unsupported');
+
+      const saved = await saveSecureCredential('test_key', 'sk-test-val');
+      assert.equal(saved, false, 'saveSecureCredential returns false without unhandled exception');
+
+      const retrieved = await getSecureCredential('test_key');
+      assert.equal(retrieved, null, 'getSecureCredential returns null without unhandled exception');
+
+      const deleted = await deleteSecureCredential('test_key');
+      assert.equal(deleted, false, 'deleteSecureCredential returns false without unhandled exception');
+
+      // AIService key resolution
+      const plainResolved = await AIService.resolveApiKey({
+        id: 'cfg_test_1',
+        name: 'Test',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: '  sk-openai-live-key  ',
+        model: 'gpt-4o',
+        contextBudget: 4096,
+      });
+      assert.equal(plainResolved, 'sk-openai-live-key', 'Trims and returns plain key');
+
+      const emptyResolved = await AIService.resolveApiKey({
+        id: 'cfg_test_2',
+        name: 'Ollama',
+        baseUrl: 'http://localhost:11434/v1',
+        apiKey: '',
+        model: 'qwen2.5',
+        contextBudget: 4096,
+      });
+      assert.equal(emptyResolved, '', 'Empty key returns empty string');
+
+      // StorageService credential lifecycle & state contract
+      const isAvailable = await StorageService.isKeychainAvailable();
+      assert.equal(isAvailable, false, 'StorageService.isKeychainAvailable returns false in web fallback');
+
+      // Save and delete operations
+      StorageService.saveProviderConfigs([
+        {
+          id: 'cfg_unit_test',
+          name: 'Unit Test Provider',
+          baseUrl: 'https://api.deepseek.com/v1',
+          apiKey: 'sk-deepseek-unit-test-key',
+          model: 'deepseek-chat',
+          contextBudget: 8192,
+        },
+      ]);
+      const storedConfigs = StorageService.getProviderConfigs();
+      assert.equal(storedConfigs.length, 1);
+      assert.equal(storedConfigs[0].id, 'cfg_unit_test');
+
+      await StorageService.deleteSecureCredentialForConfig('cfg_unit_test');
     });
 
     console.log(`\n📊 Test Results: ${passed} passed, ${failed} failed`);

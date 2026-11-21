@@ -29,9 +29,13 @@ import {
 import { useAppStore } from '../store/useAppStore';
 import { ProviderConfig, PromptAction } from '../types';
 import { AIService } from '../services/aiService';
+import { isKeychainSupported, KEYCHAIN_PLACEHOLDER } from '../utils/tauriBridge';
 
 function formatMaskedApiKey(key: string): string {
   if (!key) return '';
+  if (key === KEYCHAIN_PLACEHOLDER) {
+    return '•••••••• [钥匙串托管]';
+  }
   const trimmed = key.trim();
   if (trimmed.length <= 8) {
     return '••••••••';
@@ -137,6 +141,13 @@ export const SettingsModal: React.FC = () => {
   const [isEditingKey, setIsEditingKey] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isKeychainSupportedState, setIsKeychainSupportedState] = useState(false);
+
+  useEffect(() => {
+    isKeychainSupported().then((supported) => {
+      setIsKeychainSupportedState(supported);
+    });
+  }, []);
 
   // Custom Action Form State
   const [isActionFormOpen, setIsActionFormOpen] = useState(false);
@@ -481,12 +492,31 @@ export const SettingsModal: React.FC = () => {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-[11px] font-medium text-neutral-600 dark:text-neutral-400">
-                      API Key
-                    </label>
+                    <div className="flex items-center gap-2">
+                      <label className="block text-[11px] font-medium text-neutral-600 dark:text-neutral-400">
+                        API Key
+                      </label>
+                      {isKeychainSupportedState ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60"
+                          title="在桌面端由 macOS Keychain / 系统凭据库加密安全托管"
+                        >
+                          <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <span>钥匙串保护</span>
+                        </span>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700"
+                          title="Web 模式下保存在浏览器本地隔离沙箱"
+                        >
+                          <Lock className="w-3 h-3" />
+                          <span>本地沙箱</span>
+                        </span>
+                      )}
+                    </div>
                     {hasSavedKey && !isEditingKey && (
                       <span className="inline-flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                        <Lock className="w-3 h-3" />
+                        <Check className="w-3 h-3" />
                         <span>已安全就绪</span>
                       </span>
                     )}
@@ -986,7 +1016,15 @@ export const SettingsModal: React.FC = () => {
         <div className="px-5 py-2.5 bg-neutral-100/70 dark:bg-neutral-900/50 border-t border-neutral-100 dark:border-neutral-800 text-[10px] text-neutral-500 dark:text-neutral-400 leading-relaxed flex items-center gap-1.5 flex-shrink-0">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
           <span>
-            <strong>隐私保障</strong>：API Key 仅保存在本机隔离存储，请求直连指定服务端点；本地数据未加密，请勿在公共借用设备上保存敏感凭据。
+            {isKeychainSupportedState ? (
+              <>
+                <strong>安全保障</strong>：桌面模式已启用<strong>系统原生钥匙串托管（macOS Keychain / OS Vault）</strong>，API Key 真正脱离网页存储层；请求直连指定服务端点。
+              </>
+            ) : (
+              <>
+                <strong>隐私说明</strong>：当前处于网页/沙箱环境，API Key 存放于本地浏览器隔离沙箱；桌面端可使用独立安装包以享受系统钥匙串硬件级安全托管。
+              </>
+            )}
           </span>
         </div>
 

@@ -725,6 +725,13 @@ export const useAppStore = create<AppState>((set, get) => {
     providerConfigs: initialConfigs,
     activeConfigId: initialActiveId,
     setProviderConfigs: (configs) => {
+      const prev = get().providerConfigs;
+      const nextIds = new Set(configs.map((c) => c.id));
+      for (const p of prev) {
+        if (!nextIds.has(p.id)) {
+          StorageService.deleteSecureCredentialForConfig(p.id).catch(() => {});
+        }
+      }
       StorageService.saveProviderConfigs(configs);
       set({ providerConfigs: configs });
       const currentActive = get().activeConfigId;
@@ -772,3 +779,18 @@ export const useAppStore = create<AppState>((set, get) => {
     },
   };
 });
+
+// In desktop environment, asynchronously hydrate real API keys from OS Keychain
+StorageService.waitForInit().then(() => {
+  StorageService.hydrateSecureCredentials()
+    .then((updated) => {
+      if (updated) {
+        const fresh = StorageService.getProviderConfigs();
+        useAppStore.setState({ providerConfigs: fresh });
+      }
+    })
+    .catch((err) => {
+      console.warn('[useAppStore] Failed to hydrate Keychain credentials:', err);
+    });
+});
+

@@ -1,6 +1,6 @@
 import { ProviderConfig, SelectionContext, ChatMessage, DocScopeMode } from '../types';
 import { estimateTokens, extractViewportSection } from '../utils/contextExtractor';
-import { nativeFetch } from '../utils/tauriBridge';
+import { nativeFetch, getSecureCredential, KEYCHAIN_PLACEHOLDER } from '../utils/tauriBridge';
 
 export interface PromptPreviewInfo {
   systemPrompt: string;
@@ -44,16 +44,26 @@ export class AIService {
     }
   }
 
+  public static async resolveApiKey(config: ProviderConfig): Promise<string> {
+    if (!config.apiKey) return '';
+    if (config.apiKey === KEYCHAIN_PLACEHOLDER) {
+      const secret = await getSecureCredential(`api_key_${config.id}`);
+      return (secret || '').trim();
+    }
+    return config.apiKey.trim();
+  }
+
   public static async testConnection(
     config: ProviderConfig
   ): Promise<{ success: boolean; message: string }> {
     try {
       const url = this.formatBaseUrl(config.baseUrl);
+      const effectiveApiKey = await this.resolveApiKey(config);
       const res = await nativeFetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey.trim()}` } : {}),
+          ...(effectiveApiKey ? { Authorization: `Bearer ${effectiveApiKey}` } : {}),
         },
         body: JSON.stringify({
           model: config.model.trim(),
@@ -217,12 +227,13 @@ export class AIService {
 
     try {
       const url = this.formatBaseUrl(config.baseUrl);
+      const effectiveApiKey = await this.resolveApiKey(config);
 
       const res = await nativeFetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(config.apiKey ? { Authorization: `Bearer ${config.apiKey.trim()}` } : {}),
+          ...(effectiveApiKey ? { Authorization: `Bearer ${effectiveApiKey}` } : {}),
         },
         body: JSON.stringify({
           model: config.model.trim(),
