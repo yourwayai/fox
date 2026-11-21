@@ -19,6 +19,9 @@ import {
   Lightbulb,
   Cpu,
   Code2,
+  Languages,
+  Wand2,
+  CheckSquare,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { SelectionContext, PromptActionType } from '../types';
@@ -42,6 +45,29 @@ function extractNodeText(node: React.ReactNode): string {
     return extractNodeText(node.props.children);
   }
   return '';
+}
+
+function renderActionIcon(iconName?: string) {
+  switch (iconName) {
+    case 'Sparkles':
+      return <Sparkles className="w-3.5 h-3.5 text-fox-orange" />;
+    case 'Lightbulb':
+      return <Lightbulb className="w-3.5 h-3.5 text-amber-400" />;
+    case 'Cpu':
+      return <Cpu className="w-3.5 h-3.5 text-cyan-400" />;
+    case 'Code2':
+      return <Code2 className="w-3.5 h-3.5 text-emerald-400" />;
+    case 'Languages':
+      return <Languages className="w-3.5 h-3.5 text-blue-400" />;
+    case 'FileText':
+      return <FileText className="w-3.5 h-3.5 text-indigo-400" />;
+    case 'CheckSquare':
+      return <CheckSquare className="w-3.5 h-3.5 text-teal-400" />;
+    case 'Wand2':
+      return <Wand2 className="w-3.5 h-3.5 text-fuchsia-400" />;
+    default:
+      return <Sparkles className="w-3.5 h-3.5 text-fox-orange" />;
+  }
 }
 
 interface RenderedMarkdownBodyProps {
@@ -259,6 +285,11 @@ export const MarkdownReader: React.FC = () => {
   const triggerFocusInput = useAppStore((s) => s.triggerFocusInput);
   const trustedImageDomains = useAppStore((s) => s.trustedImageDomains);
   const trustImageDomain = useAppStore((s) => s.trustImageDomain);
+  const promptActions = useAppStore((s) => s.promptActions);
+  const visibleActions = useMemo(
+    () => promptActions.filter((a) => a.enabled !== false),
+    [promptActions]
+  );
 
   // Per-document remote image allowance state (Image Beacon protection)
   const [allowedImageUrls, setAllowedImageUrls] = useState<Set<string>>(new Set());
@@ -820,45 +851,18 @@ export const MarkdownReader: React.FC = () => {
           className="selection-toolbar fixed z-50 flex items-center gap-1 bg-[#1F242D] text-white px-2 py-1.5 rounded-xl shadow-2xl border border-neutral-700 -translate-x-1/2 fox-pop-in select-none"
           style={{ left: `${selectionBox.x}px`, top: `${selectionBox.y}px` }}
         >
-          <button
-            type="button"
-            onClick={() => handleTriggerAction('explain')}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium hover:bg-neutral-700/80 rounded-lg transition-colors text-orange-300 hover:text-orange-200"
-            title="快速解释核心概念与背景"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-fox-orange" />
-            解释
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleTriggerAction('analogy')}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium hover:bg-neutral-700/80 rounded-lg transition-colors text-amber-200 hover:text-amber-100"
-            title="通俗浅显的比喻类比说明"
-          >
-            <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-            类比
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleTriggerAction('deep_dive')}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium hover:bg-neutral-700/80 rounded-lg transition-colors text-cyan-200 hover:text-cyan-100"
-            title="深度技术推导与权衡分析"
-          >
-            <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-            推导
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleTriggerAction('code_review')}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium hover:bg-neutral-700/80 rounded-lg transition-colors text-emerald-200 hover:text-emerald-100"
-            title="审查复杂度、潜在缺陷与重构建议"
-          >
-            <Code2 className="w-3.5 h-3.5 text-emerald-400" />
-            审查
-          </button>
+          {visibleActions.map((action) => (
+            <button
+              key={action.id}
+              type="button"
+              onClick={() => handleTriggerAction(action.id)}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-medium hover:bg-neutral-700/80 rounded-lg transition-colors text-neutral-200 hover:text-white"
+              title={action.prompt}
+            >
+              {renderActionIcon(action.icon)}
+              <span>{action.label}</span>
+            </button>
+          ))}
 
           <div className="w-[1px] h-3.5 bg-neutral-600 mx-0.5" />
 
@@ -869,7 +873,7 @@ export const MarkdownReader: React.FC = () => {
             title="作为引用填入提问框自拟问题"
           >
             <PlusCircle className="w-3.5 h-3.5 text-neutral-400" />
-            加入提问
+            <span>加入提问</span>
           </button>
         </div>
       )}

@@ -32,6 +32,7 @@ async function main() {
       estimateTokens,
       extractViewportSection,
       getPresetPrompt,
+      DEFAULT_PROMPT_ACTIONS,
     } = await server.ssrLoadModule('./src/utils/contextExtractor.ts');
 
     const { StorageService } = await server.ssrLoadModule('./src/services/storageService.ts');
@@ -174,6 +175,45 @@ ${'后续内容 '.repeat(100)}
       assert.ok(StorageService.getTrustedImageDomains().includes('trusted-cdn.com'));
       StorageService.removeTrustedImageDomain('trusted-cdn.com');
       assert.ok(!StorageService.getTrustedImageDomains().includes('trusted-cdn.com'));
+    });
+
+    // Test 10: Custom Prompt Actions & Dynamic Toolbar Integration (Task 6)
+    await test('Prompt Actions: supports custom user-defined action presets and storage persistence', () => {
+      assert.equal(DEFAULT_PROMPT_ACTIONS.length, 4, 'Has 4 default built-in actions');
+      assert.equal(DEFAULT_PROMPT_ACTIONS[0].id, 'explain');
+      assert.equal(DEFAULT_PROMPT_ACTIONS[1].id, 'analogy');
+      assert.equal(DEFAULT_PROMPT_ACTIONS[2].id, 'deep_dive');
+      assert.equal(DEFAULT_PROMPT_ACTIONS[3].id, 'code_review');
+
+      // Custom action resolution
+      const customActions = [
+        ...DEFAULT_PROMPT_ACTIONS,
+        {
+          id: 'custom_translate_zh',
+          label: '英译中',
+          prompt: '请将选中文档翻译为自然流畅的现代汉语。',
+          icon: 'Languages',
+          builtin: false,
+          enabled: true,
+        },
+      ];
+
+      const resolvedCustom = getPresetPrompt('custom_translate_zh', customActions);
+      assert.equal(resolvedCustom, '请将选中文档翻译为自然流畅的现代汉语。');
+
+      // Built-in fallback
+      const resolvedBuiltin = getPresetPrompt('analogy', customActions);
+      assert.ok(resolvedBuiltin.includes('通俗易懂'));
+
+      // Storage persistence
+      StorageService.savePromptActions(customActions);
+      const stored = StorageService.getPromptActions();
+      assert.equal(stored.length, 5);
+      assert.equal(stored.find((a) => a.id === 'custom_translate_zh')?.label, '英译中');
+
+      // Reset to defaults
+      const resetList = StorageService.resetPromptActions();
+      assert.equal(resetList.length, 4);
     });
 
     console.log(`\n📊 Test Results: ${passed} passed, ${failed} failed`);

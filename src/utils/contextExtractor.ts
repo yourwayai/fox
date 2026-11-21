@@ -1,4 +1,4 @@
-import { SelectionContext, TocItem, PromptActionType } from '../types';
+import { SelectionContext, TocItem, PromptActionType, PromptAction } from '../types';
 
 /**
  * Conservative token estimator based on project specification:
@@ -112,20 +112,66 @@ export function extractTocFromMarkdown(content: string): TocItem[] {
 }
 
 /**
- * Pre-configured prompt templates for one-click reading actions.
+ * Built-in default prompt templates for one-click reading actions.
  */
-export function getPresetPrompt(action: PromptActionType): string {
-  switch (action) {
-    case 'analogy':
-      return '请用生动形象、通俗易懂的生活常识或比喻（类比），向初学者解释选中的内容，帮助直观理解其本质。';
-    case 'deep_dive':
-      return '请对选中的内容进行深度推导与技术解构，分析其底层运作机制、设计权衡（Trade-offs）与边界考量。';
-    case 'code_review':
-      return '请对选中的代码/技术逻辑进行专业审查（Code Review），分析时间与空间复杂度、潜在边界缺陷并给出优雅的重构优化方案。';
-    case 'explain':
-    default:
-      return '请解释这段内容的核心含义及背景。';
+export const DEFAULT_PROMPT_ACTIONS: PromptAction[] = [
+  {
+    id: 'explain',
+    label: '解释',
+    prompt: '请解释这段内容的核心含义及背景。',
+    icon: 'Sparkles',
+    builtin: true,
+    enabled: true,
+  },
+  {
+    id: 'analogy',
+    label: '类比',
+    prompt: '请用生动形象、通俗易懂的生活常识或比喻（类比），向初学者解释选中的内容，帮助直观理解其本质。',
+    icon: 'Lightbulb',
+    builtin: true,
+    enabled: true,
+  },
+  {
+    id: 'deep_dive',
+    label: '推导',
+    prompt: '请对选中的内容进行深度推导与技术解构，分析其底层运作机制、设计权衡（Trade-offs）与边界考量。',
+    icon: 'Cpu',
+    builtin: true,
+    enabled: true,
+  },
+  {
+    id: 'code_review',
+    label: '审查',
+    prompt: '请对选中的代码/技术逻辑进行专业审查（Code Review），分析时间与空间复杂度、潜在边界缺陷并给出优雅的重构优化方案。',
+    icon: 'Code2',
+    builtin: true,
+    enabled: true,
+  },
+];
+
+/**
+ * Pre-configured prompt templates for one-click reading actions.
+ * Supports both built-in action IDs and user-defined custom prompt presets.
+ */
+export function getPresetPrompt(action: PromptActionType, customActions: PromptAction[] = []): string {
+  // Check custom actions first
+  const foundCustom = customActions.find((a) => a.id === action);
+  if (foundCustom && foundCustom.prompt) {
+    return foundCustom.prompt;
   }
+
+  // Check built-in actions
+  const foundBuiltin = DEFAULT_PROMPT_ACTIONS.find((a) => a.id === action);
+  if (foundBuiltin && foundBuiltin.prompt) {
+    return foundBuiltin.prompt;
+  }
+
+  // If direct prompt text passed
+  if (action && action.length > 20 && (action.includes(' ') || action.includes('请') || action.includes('的'))) {
+    return action;
+  }
+
+  return '请解释这段内容的核心含义及背景。';
 }
 
 /**

@@ -1,4 +1,5 @@
-import { ProviderConfig, ChatMessage, RecentDocumentMeta, ThemeMode } from '../types';
+import { ProviderConfig, ChatMessage, RecentDocumentMeta, ThemeMode, PromptAction } from '../types';
+import { DEFAULT_PROMPT_ACTIONS } from '../utils/contextExtractor';
 import { IStorageAdapter } from './storage/types';
 import { LocalStorageAdapter } from './storage/localStorageAdapter';
 import { IndexedDBAdapter } from './storage/indexedDBAdapter';
@@ -18,6 +19,7 @@ class MemoryCache {
   recentDocs: RecentDocumentMeta[] = [];
   confirmedDomains: string[] = [];
   trustedImageDomains: string[] = [];
+  promptActions: PromptAction[] = [...DEFAULT_PROMPT_ACTIONS];
   docContents: Map<string, string> = new Map();
   docHashes: Map<string, string> = new Map();
   chatMessages: Map<string, ChatMessage[]> = new Map();
@@ -57,6 +59,13 @@ class MemoryCache {
 
       const imageDomains = localStorage.getItem('fox_trusted_image_domains');
       if (imageDomains) this.trustedImageDomains = JSON.parse(imageDomains);
+
+      const savedActions = localStorage.getItem('fox_prompt_actions');
+      if (savedActions) {
+        this.promptActions = JSON.parse(savedActions);
+      } else {
+        this.promptActions = [...DEFAULT_PROMPT_ACTIONS];
+      }
     } catch (e) {
       console.warn('[StorageService] Error during initial sync hydration:', e);
     }
@@ -190,6 +199,25 @@ export class StorageService {
     try {
       localStorage.removeItem('fox_trusted_image_domains');
     } catch {}
+  }
+
+  public static getPromptActions(): PromptAction[] {
+    return memory.promptActions;
+  }
+
+  public static savePromptActions(actions: PromptAction[]): void {
+    memory.promptActions = actions;
+    try {
+      localStorage.setItem('fox_prompt_actions', JSON.stringify(actions));
+    } catch {}
+  }
+
+  public static resetPromptActions(): PromptAction[] {
+    memory.promptActions = [...DEFAULT_PROMPT_ACTIONS];
+    try {
+      localStorage.removeItem('fox_prompt_actions');
+    } catch {}
+    return memory.promptActions;
   }
 
   public static getMessages(documentId: string): ChatMessage[] {

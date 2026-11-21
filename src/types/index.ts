@@ -13,7 +13,18 @@ export type DocScopeMode = 'full_doc' | 'viewport_section';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
-export type PromptActionType = 'explain' | 'analogy' | 'deep_dive' | 'code_review';
+export type BuiltinPromptActionType = 'explain' | 'analogy' | 'deep_dive' | 'code_review';
+
+export type PromptActionType = BuiltinPromptActionType | string;
+
+export interface PromptAction {
+  id: string;
+  label: string;
+  prompt: string;
+  icon?: string;
+  builtin?: boolean;
+  enabled?: boolean;
+}
 
 export interface TocItem {
   id: string;

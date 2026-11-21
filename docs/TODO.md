@@ -7,7 +7,7 @@
 | 阶段 | 范围定位 | 任务数 | 完成度 | 当前状态 |
 | :--- | :--- | :---: | :---: | :---: |
 | **Phase A** | 生产可用与交付闭环（Task 1 ~ 4） | 4 / 4 | **100%** | ✅ **已全部完成** |
-| **Phase B** | 安全加固与体验升级（Task 5 ~ 8） | 1 / 4 | **25%** | 🔄 **进行中（已完成 Task 5，待开始 Task 6）** |
+| **Phase B** | 安全加固与体验升级（Task 5 ~ 8） | 2 / 4 | **50%** | 🔄 **进行中（已完成 Task 5、Task 6，待开始 Task 7）** |
 | **Phase C** | 空间化组织与进阶演进（Task 9 ~ 11） | 0 / 3 | **0%** | 📋 长期候选池 |
 
 ---
@@ -47,10 +47,10 @@
   - **结果**：实现远程外链图片拦截确认闸门（`RemoteImageGate`）。对 `https://` / `http://` / `//` 外链图片默认禁止发出 HTTP 请求，展示防信标追踪防护卡片（显示图片描述与域名）；支持单次“加载此图”、“信任此域名”（自动放行该域名所有图片并持久化至设置）以及“全部放行”；在设置中心支持集中查看与一键解绑已信任域名；新增自动化安全断言测试网覆盖。
   - **涉及文件**：`src/utils/security.ts` · `src/components/RemoteImageGate.tsx` · `src/components/MarkdownReader.tsx` · `src/components/SettingsModal.tsx` · `src/services/storageService.ts` · `src/store/useAppStore.ts`
 
-- [ ] **6. 自定义划选伴读指令预设（Custom Prompt Actions）**
+- [x] **6. 自定义划选伴读指令预设（Custom Prompt Actions）**
   - **目标**：允许用户在设置中自定义划词工具条的动作。
-  - **表现**：除内置的 `[解释]`、`[类比]`、`[推导]`、`[代码评审]` 之外，支持用户添加自定义指令（例如 `[翻译为英文]`、`[提炼要点]` 等）。
-  - **涉及文件**：`src/types/index.ts` · `src/components/SettingsModal.tsx` · `src/store/useAppStore.ts`
+  - **结果**：设置中心全新升级三标签页布局（AI 模型与服务、划选指令预设、外观与隐私）。新增划选指令管理面板，支持：自由新增/编辑/删除自定义指令（支持标签、Prompt 模板、专属图标与显示开关）；提供内置指令开关与一键恢复默认；提供“翻译”、“要点”、“润色”等常用指令一键添加灵感卡片；划选浮动工具栏支持动态自适应渲染与流式问答触发；自动化测试网扩展至 10 项全过。
+  - **涉及文件**：`src/types/index.ts` · `src/utils/contextExtractor.ts` · `src/services/storageService.ts` · `src/store/useAppStore.ts` · `src/components/MarkdownReader.tsx` · `src/components/SettingsModal.tsx`
 
 - [ ] **7. 桌面端系统原生 Keychain / 凭据库密钥托管**
   - **目标**：Tauri 原生底座接入系统级安全凭据库（macOS Keychain / Windows Credential Manager）。
@@ -84,4 +84,4 @@
 - [x] **交互与安全**：单条 `[换模型重答]`、首次外部域名确认弹窗、导出 Markdown 笔记
 - [x] **Fox 矢量吉祥物**：原生 SVG 渲染、尾巴旋转映射阅读进度、耳朵状态映射、减弱动画模式
 - [x] **桌面化底座**：Tauri 2 配置、CORS-free 原生网络、本地相对图片解析、文件关联与 Finder 参数
-- [x] **质量与规范**：`npm test` 自动化测试网（9/9）、CI 自动化测试与构建校验、MIT 开源协议、双语 README 精简重构
+- [x] **质量与规范**：`npm test` 自动化测试网（10/10）、CI 自动化测试与构建校验、MIT 开源协议、双语 README 精简重构

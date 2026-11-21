@@ -34,7 +34,7 @@ Fox is not locked to any provider. It ships with one-click presets for DeepSeek,
 
 **Split workspace** — Zed-style dual-pane layout. Asking a question never disrupts the right-side scroll position. Pixel-level position memory persists across document switches and reloads, with each document maintaining an isolated AI thread.
 
-**Multi-action selection** — Select text to surface a floating toolbar: `✨ Explain` · `💡 Analogy` · `🔍 Deep Dive` · `⚡ Code Review` · `➕ Append`. Unfamiliar terms inside AI replies can be selected again for recursive follow-up.
+**Multi-action selection** — Select text to surface a floating toolbar: built-in `✨ Explain` · `💡 Analogy` · `🔍 Deep Dive` · `⚡ Code Review` · `➕ Append`, fully extensible with custom user-defined prompt presets (translation, key bullet points, copyediting) in Settings. Unfamiliar terms inside AI replies can be selected again for recursive follow-up.
 
 **Floating TOC & search** — Expandable multi-level outline drawer with live heading sync. `Cmd+F` in-document search with match counter, highlighting, and prev/next navigation.
 
@@ -108,7 +108,7 @@ npm run tauri:build    # production bundle
 npm run bundle:dmg     # package production macOS .dmg installer
 ```
 
-**Tests** — 9 automated cases covering TOC parsing, doc IDs, viewport extraction, storage adapters, shortcuts, and image beacon safety:
+**Tests** — 10 automated cases covering TOC parsing, doc IDs, viewport extraction, storage adapters, shortcuts, image beacon safety, and custom prompt presets:
 
 ```bash
 npm test

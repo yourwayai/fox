@@ -9,6 +9,7 @@ import {
   DocScopeMode,
   ThemeMode,
   PromptActionType,
+  PromptAction,
 } from '../types';
 import { StorageService } from '../services/storageService';
 import { AIService } from '../services/aiService';
@@ -69,6 +70,14 @@ interface AppState {
   trustImageDomain: (domain: string) => void;
   untrustImageDomain: (domain: string) => void;
   clearTrustedImageDomains: () => void;
+
+  // Custom prompt actions (Planning Task 6)
+  promptActions: PromptAction[];
+  setPromptActions: (actions: PromptAction[]) => void;
+  addPromptAction: (action: Omit<PromptAction, 'id'>) => void;
+  updatePromptAction: (id: string, updates: Partial<PromptAction>) => void;
+  deletePromptAction: (id: string) => void;
+  resetPromptActions: () => void;
 
   // AI Provider settings
   providerConfigs: ProviderConfig[];
@@ -603,7 +612,7 @@ export const useAppStore = create<AppState>((set, get) => {
     },
 
     executePromptAction: async (quote: SelectionContext, action: PromptActionType) => {
-      const prompt = getPresetPrompt(action);
+      const prompt = getPresetPrompt(action, get().promptActions);
       await get().sendQuestion(prompt, {
         quoteOverride: quote,
       });
@@ -679,6 +688,38 @@ export const useAppStore = create<AppState>((set, get) => {
     clearTrustedImageDomains: () => {
       StorageService.clearTrustedImageDomains();
       set({ trustedImageDomains: [] });
+    },
+
+    // Custom prompt actions
+    promptActions: StorageService.getPromptActions(),
+    setPromptActions: (actions: PromptAction[]) => {
+      StorageService.savePromptActions(actions);
+      set({ promptActions: actions });
+    },
+    addPromptAction: (actionData: Omit<PromptAction, 'id'>) => {
+      const newAction: PromptAction = {
+        ...actionData,
+        id: `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        builtin: false,
+        enabled: actionData.enabled ?? true,
+      };
+      const updated = [...get().promptActions, newAction];
+      StorageService.savePromptActions(updated);
+      set({ promptActions: updated });
+    },
+    updatePromptAction: (id: string, updates: Partial<PromptAction>) => {
+      const updated = get().promptActions.map((a) => (a.id === id ? { ...a, ...updates } : a));
+      StorageService.savePromptActions(updated);
+      set({ promptActions: updated });
+    },
+    deletePromptAction: (id: string) => {
+      const updated = get().promptActions.filter((a) => a.id !== id);
+      StorageService.savePromptActions(updated);
+      set({ promptActions: updated });
+    },
+    resetPromptActions: () => {
+      const defaults = StorageService.resetPromptActions();
+      set({ promptActions: defaults });
     },
 
     providerConfigs: initialConfigs,
