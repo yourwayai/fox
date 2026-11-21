@@ -25,7 +25,8 @@ import { SelectionContext, PromptActionType } from '../types';
 import { MarkdownPre, InlineCode, isSafeLinkHref } from './CodeBlock';
 import { TableOfContents } from './TableOfContents';
 import { DocumentSearch } from './DocumentSearch';
-import { isTauriApp, openExternal, resolveMarkdownImageSrc } from '../utils/tauriBridge';
+import { RemoteImageGate } from './RemoteImageGate';
+import { isTauriApp, openExternal } from '../utils/tauriBridge';
 import {
   extractSelectionContext,
   computeContentHash,
@@ -47,31 +48,48 @@ interface RenderedMarkdownBodyProps {
   content: string;
   filePath?: string;
   onAnchorNavigate: (anchorId: string) => void;
+  trustedDomains?: string[];
+  allowedUrls?: Set<string>;
+  allowAllDocImages?: boolean;
+  onAllowImage?: (url: string) => void;
+  onTrustDomain?: (domain: string) => void;
+  onAllowAllDocImages?: () => void;
 }
 
 /**
- * Memoized Markdown document renderer with KaTeX, Mermaid and Slug support:
- * Isolated from scroll progress updates so large Markdown ASTs
- * are ONLY parsed and rendered when `content` actually changes.
+ * Memoized Markdown document renderer with KaTeX, Mermaid, Heading Slugs,
+ * and Remote Image Privacy Gate (Image Beacon Protection).
  */
 const RenderedMarkdownBody: React.FC<RenderedMarkdownBodyProps> = memo(
-  ({ content, filePath, onAnchorNavigate }) => {
+  ({
+    content,
+    filePath,
+    onAnchorNavigate,
+    trustedDomains,
+    allowedUrls,
+    allowAllDocImages,
+    onAllowImage,
+    onTrustDomain,
+    onAllowAllDocImages,
+  }) => {
     const markdownComponents: Components = React.useMemo(
       () => ({
         pre: MarkdownPre,
         code: InlineCode,
-        img: ({ src, alt, ...props }) => {
-          const resolved = resolveMarkdownImageSrc(src || '', filePath);
-          return (
-            <img
-              src={resolved}
-              alt={alt || ''}
-              loading="lazy"
-              className="max-w-full rounded-md shadow-sm my-3 border border-neutral-200 dark:border-neutral-800"
-              {...props}
-            />
-          );
-        },
+        img: ({ src, alt, ...props }) => (
+          <RemoteImageGate
+            src={src}
+            alt={alt}
+            filePath={filePath}
+            trustedDomains={trustedDomains}
+            allowedUrls={allowedUrls}
+            allowAllDocImages={allowAllDocImages}
+            onAllowImage={onAllowImage}
+            onTrustDomain={onTrustDomain}
+            onAllowAllDocImages={onAllowAllDocImages}
+            {...props}
+          />
+        ),
         h1: ({ children }) => <h1 id={slugifyHeading(extractNodeText(children))}>{children}</h1>,
         h2: ({ children }) => <h2 id={slugifyHeading(extractNodeText(children))}>{children}</h2>,
         h3: ({ children }) => <h3 id={slugifyHeading(extractNodeText(children))}>{children}</h3>,
@@ -117,7 +135,16 @@ const RenderedMarkdownBody: React.FC<RenderedMarkdownBodyProps> = memo(
           );
         },
       }),
-      [filePath, onAnchorNavigate]
+      [
+        filePath,
+        onAnchorNavigate,
+        trustedDomains,
+        allowedUrls,
+        allowAllDocImages,
+        onAllowImage,
+        onTrustDomain,
+        onAllowAllDocImages,
+      ]
     );
 
     return (
@@ -230,6 +257,32 @@ export const MarkdownReader: React.FC = () => {
   const setActiveQuote = useAppStore((s) => s.setActiveQuote);
   const executePromptAction = useAppStore((s) => s.executePromptAction);
   const triggerFocusInput = useAppStore((s) => s.triggerFocusInput);
+  const trustedImageDomains = useAppStore((s) => s.trustedImageDomains);
+  const trustImageDomain = useAppStore((s) => s.trustImageDomain);
+
+  // Per-document remote image allowance state (Image Beacon protection)
+  const [allowedImageUrls, setAllowedImageUrls] = useState<Set<string>>(new Set());
+  const [allowAllDocImages, setAllowAllDocImages] = useState<boolean>(false);
+
+  useEffect(() => {
+    setAllowedImageUrls(new Set());
+    setAllowAllDocImages(false);
+  }, [activeDocId]);
+
+  const handleAllowImage = useCallback((url: string) => {
+    setAllowedImageUrls((prev) => new Set([...prev, url]));
+  }, []);
+
+  const handleTrustDomain = useCallback(
+    (domain: string) => {
+      trustImageDomain(domain);
+    },
+    [trustImageDomain]
+  );
+
+  const handleAllowAllDocImages = useCallback(() => {
+    setAllowAllDocImages(true);
+  }, []);
 
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isDocDropdownOpen, setIsDocDropdownOpen] = useState(false);
@@ -740,6 +793,12 @@ export const MarkdownReader: React.FC = () => {
               content={activeDocContent}
               filePath={activeDocFilePath}
               onAnchorNavigate={handleAnchorNavigate}
+              trustedDomains={trustedImageDomains}
+              allowedUrls={allowedImageUrls}
+              allowAllDocImages={allowAllDocImages}
+              onAllowImage={handleAllowImage}
+              onTrustDomain={handleTrustDomain}
+              onAllowAllDocImages={handleAllowAllDocImages}
             />
           </div>
         </div>

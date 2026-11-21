@@ -17,6 +17,7 @@ class MemoryCache {
   providerConfigs: ProviderConfig[] = [];
   recentDocs: RecentDocumentMeta[] = [];
   confirmedDomains: string[] = [];
+  trustedImageDomains: string[] = [];
   docContents: Map<string, string> = new Map();
   docHashes: Map<string, string> = new Map();
   chatMessages: Map<string, ChatMessage[]> = new Map();
@@ -53,6 +54,9 @@ class MemoryCache {
 
       const domains = localStorage.getItem('fox_confirmed_domains');
       if (domains) this.confirmedDomains = JSON.parse(domains);
+
+      const imageDomains = localStorage.getItem('fox_trusted_image_domains');
+      if (imageDomains) this.trustedImageDomains = JSON.parse(imageDomains);
     } catch (e) {
       console.warn('[StorageService] Error during initial sync hydration:', e);
     }
@@ -157,6 +161,35 @@ export class StorageService {
         localStorage.setItem('fox_confirmed_domains', JSON.stringify(memory.confirmedDomains));
       } catch {}
     }
+  }
+
+  public static getTrustedImageDomains(): string[] {
+    return memory.trustedImageDomains;
+  }
+
+  public static saveTrustedImageDomain(domain: string): void {
+    const clean = domain.toLowerCase().trim();
+    if (clean && !memory.trustedImageDomains.includes(clean)) {
+      memory.trustedImageDomains.push(clean);
+      try {
+        localStorage.setItem('fox_trusted_image_domains', JSON.stringify(memory.trustedImageDomains));
+      } catch {}
+    }
+  }
+
+  public static removeTrustedImageDomain(domain: string): void {
+    const clean = domain.toLowerCase().trim();
+    memory.trustedImageDomains = memory.trustedImageDomains.filter((d) => d !== clean);
+    try {
+      localStorage.setItem('fox_trusted_image_domains', JSON.stringify(memory.trustedImageDomains));
+    } catch {}
+  }
+
+  public static clearTrustedImageDomains(): void {
+    memory.trustedImageDomains = [];
+    try {
+      localStorage.removeItem('fox_trusted_image_domains');
+    } catch {}
   }
 
   public static getMessages(documentId: string): ChatMessage[] {

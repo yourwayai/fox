@@ -57,6 +57,8 @@ Fox is not locked to any provider. It ships with one-click presets for DeepSeek,
 
 **Domain privacy gate** — A confirmation modal appears the first time Fox connects to a new external domain, displaying the target host and payload summary.
 
+**Image beacon protection** — Prevents untrusted Markdown files from logging your IP and reading activity via remote tracking pixels. External images are blocked behind an interactive confirmation card, with single-image loading, domain trust, and centralized revocation.
+
 ### Rendering
 
 **KaTeX math** — Full support for inline `$E=mc^2$` and display-mode `$$...$$` equations.
@@ -106,7 +108,7 @@ npm run tauri:build    # production bundle
 npm run bundle:dmg     # package production macOS .dmg installer
 ```
 
-**Tests** — 8 automated cases covering TOC parsing, doc IDs, viewport extraction, storage adapters, and shortcut handlers:
+**Tests** — 9 automated cases covering TOC parsing, doc IDs, viewport extraction, storage adapters, shortcuts, and image beacon safety:
 
 ```bash
 npm test

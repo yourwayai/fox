@@ -56,6 +56,9 @@ export const SettingsModal: React.FC = () => {
   const setReduceMotion = useAppStore((s) => s.setReduceMotion);
   const theme = useAppStore((s) => s.theme);
   const setTheme = useAppStore((s) => s.setTheme);
+  const trustedImageDomains = useAppStore((s) => s.trustedImageDomains);
+  const untrustImageDomain = useAppStore((s) => s.untrustImageDomain);
+  const clearTrustedImageDomains = useAppStore((s) => s.clearTrustedImageDomains);
 
   const [currentConfig, setCurrentConfig] = useState<ProviderConfig>(() => createBlankConfig(1));
   const [showApiKey, setShowApiKey] = useState(false);
@@ -507,6 +510,51 @@ export const SettingsModal: React.FC = () => {
                   }`}
                 />
               </button>
+            </div>
+
+            {/* Remote image privacy & trusted domains (Planning Sec 4.2 & 7.2) */}
+            <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                  受信任的外链图片域名
+                </span>
+                {trustedImageDomains.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearTrustedImageDomains}
+                    className="text-[10px] text-neutral-400 hover:text-red-500 transition-colors"
+                  >
+                    清空列表
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mb-2 leading-relaxed">
+                为防范图片信标（Image Beacon）隐式探测 IP 与阅读行为，未信任域名的远程图片默认需手动确认加载。
+              </p>
+              {trustedImageDomains.length === 0 ? (
+                <div className="text-[11px] text-neutral-400 dark:text-neutral-500 italic bg-neutral-50 dark:bg-neutral-800/40 p-2 rounded-md">
+                  当前无信任域名。在阅读文档时点击拦截占位条上的“信任域名”即可添加。
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {trustedImageDomains.map((domain) => (
+                    <span
+                      key={domain}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-[11px] font-mono text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700"
+                    >
+                      <span>{domain}</span>
+                      <button
+                        type="button"
+                        onClick={() => untrustImageDomain(domain)}
+                        className="text-neutral-400 hover:text-red-500 transition-colors ml-0.5"
+                        title={`取消信任 ${domain}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

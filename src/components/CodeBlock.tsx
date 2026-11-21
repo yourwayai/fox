@@ -133,11 +133,5 @@ export const InlineCode: React.FC<React.HTMLAttributes<HTMLElement>> = ({ childr
   );
 };
 
-const SAFE_EXTERNAL_PROTOCOL = /^(https?:|mailto:)/i;
-
-export function isSafeLinkHref(href?: string): boolean {
-  if (!href) return false;
-  const trimmed = href.trim();
-  if (trimmed.startsWith('#')) return true;
-  return SAFE_EXTERNAL_PROTOCOL.test(trimmed);
-}
+import { isSafeLinkHref } from '../utils/security';
+export { isSafeLinkHref };

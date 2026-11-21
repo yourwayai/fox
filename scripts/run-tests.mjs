@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 
 async function main() {
   console.log('🧪 Running Fox Automated Test Suite...\n');
-  const server = await createServer({ server: { middlewareMode: true } });
+  const server = await createServer({
+    server: { middlewareMode: true },
+    optimizeDeps: { noDiscovery: true },
+  });
 
   let passed = 0;
   let failed = 0;
@@ -33,7 +36,12 @@ async function main() {
 
     const { StorageService } = await server.ssrLoadModule('./src/services/storageService.ts');
     const { resolveMarkdownImageSrc } = await server.ssrLoadModule('./src/utils/tauriBridge.ts');
-    const { isSafeLinkHref } = await server.ssrLoadModule('./src/components/CodeBlock.tsx');
+    const {
+      isSafeLinkHref,
+      isRemoteImageUrl,
+      extractImageHostname,
+      isImageDomainTrusted,
+    } = await server.ssrLoadModule('./src/utils/security.ts');
 
     // Test 1: TOC parsing
     await test('TOC: extracts headings and ignores code blocks', () => {
@@ -136,6 +144,36 @@ ${'后续内容 '.repeat(100)}
       assert.equal(dismissOrder[0], 'settings', 'Settings modal has highest escape dismiss priority');
       assert.equal(dismissOrder[1], 'preview', 'Prompt preview modal has second escape priority');
       assert.equal(dismissOrder[3], 'toc', 'TOC drawer dismisses before active quote');
+    });
+
+    // Test 9: Remote Image Beacon Protection & Trusted Domains Gate
+    await test('Security: blocks remote image beacons and verifies trusted image domain rules', () => {
+      // Remote URL detection
+      assert.equal(isRemoteImageUrl('https://tracker.com/pixel.png?uid=123'), true);
+      assert.equal(isRemoteImageUrl('http://example.com/photo.jpg'), true);
+      assert.equal(isRemoteImageUrl('//cdn.example.org/asset.png'), true);
+      assert.equal(isRemoteImageUrl('data:image/png;base64,iVBORw0KGgo='), false);
+      assert.equal(isRemoteImageUrl('blob:http://localhost:5173/uuid-123'), false);
+      assert.equal(isRemoteImageUrl('./assets/local-fox.png'), false);
+      assert.equal(isRemoteImageUrl('asset://localhost/Users/fox/pic.png'), false);
+
+      // Hostname extraction
+      assert.equal(extractImageHostname('https://raw.githubusercontent.com/user/repo/img.png'), 'raw.githubusercontent.com');
+      assert.equal(extractImageHostname('//images.unsplash.com/photo-1'), 'images.unsplash.com');
+      assert.equal(extractImageHostname('invalid-string'), '');
+
+      // Trusted domain matching & subdomain handling
+      assert.equal(isImageDomainTrusted('images.unsplash.com', ['unsplash.com']), true);
+      assert.equal(isImageDomainTrusted('unsplash.com', ['unsplash.com']), true);
+      assert.equal(isImageDomainTrusted('evil-unsplash.com', ['unsplash.com']), false);
+      assert.equal(isImageDomainTrusted('tracker.com', ['unsplash.com', 'github.com']), false);
+      assert.equal(isImageDomainTrusted('IMAGES.UNSPLASH.COM', ['unsplash.com']), true);
+
+      // StorageService integration for trusted image domains
+      StorageService.saveTrustedImageDomain('trusted-cdn.com');
+      assert.ok(StorageService.getTrustedImageDomains().includes('trusted-cdn.com'));
+      StorageService.removeTrustedImageDomain('trusted-cdn.com');
+      assert.ok(!StorageService.getTrustedImageDomains().includes('trusted-cdn.com'));
     });
 
     console.log(`\n📊 Test Results: ${passed} passed, ${failed} failed`);

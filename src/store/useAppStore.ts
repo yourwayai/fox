@@ -64,6 +64,12 @@ interface AppState {
   setPendingDomainConfirm: (val: { domain: string; onConfirm: () => void } | null) => void;
   confirmDomain: (domain: string, remember: boolean) => void;
 
+  // Remote Image Privacy Gate (Planning Sec 4.2 & 7.2)
+  trustedImageDomains: string[];
+  trustImageDomain: (domain: string) => void;
+  untrustImageDomain: (domain: string) => void;
+  clearTrustedImageDomains: () => void;
+
   // AI Provider settings
   providerConfigs: ProviderConfig[];
   activeConfigId: string | null;
@@ -658,6 +664,21 @@ export const useAppStore = create<AppState>((set, get) => {
         set({ pendingDomainConfirm: null });
         cb();
       }
+    },
+
+    // Remote Image Privacy Gate
+    trustedImageDomains: StorageService.getTrustedImageDomains(),
+    trustImageDomain: (domain: string) => {
+      StorageService.saveTrustedImageDomain(domain);
+      set({ trustedImageDomains: StorageService.getTrustedImageDomains() });
+    },
+    untrustImageDomain: (domain: string) => {
+      StorageService.removeTrustedImageDomain(domain);
+      set({ trustedImageDomains: StorageService.getTrustedImageDomains() });
+    },
+    clearTrustedImageDomains: () => {
+      StorageService.clearTrustedImageDomains();
+      set({ trustedImageDomains: [] });
     },
 
     providerConfigs: initialConfigs,
