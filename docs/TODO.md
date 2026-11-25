@@ -7,7 +7,7 @@
 | 阶段 | 范围定位 | 任务数 | 完成度 | 当前状态 |
 | :--- | :--- | :---: | :---: | :---: |
 | **Phase A** | 生产可用与交付闭环（Task 1 ~ 4） | 4 / 4 | **100%** | ✅ **已全部完成** |
-| **Phase B** | 安全加固与体验升级（Task 5 ~ 8） | 3 / 4 | **75%** | 🔄 **进行中（已完成 Task 5、Task 6、Task 7，待开始 Task 8）** |
+| **Phase B** | 安全加固与体验升级（Task 5 ~ 8） | 4 / 4 | **100%** | ✅ **已全部完成（Task 5 ~ Task 8）** |
 | **Phase C** | 空间化组织与进阶演进（Task 9 ~ 11） | 0 / 3 | **0%** | 📋 长期候选池 |
 
 ---
@@ -62,9 +62,13 @@
     - 自动化测试套件扩充至 11 项并全数通过。
   - **涉及文件**：`src-tauri/Cargo.toml` · `src-tauri/src/lib.rs` · `src/utils/tauriBridge.ts` · `src/services/storageService.ts` · `src/services/aiService.ts` · `src/store/useAppStore.ts` · `src/components/SettingsModal.tsx` · `scripts/run-tests.mjs`
 
-- [ ] **8. GitHub Actions 多平台自动发版（Release Workflow）**
+- [x] **8. GitHub Actions 多平台自动发版（Release Workflow）**
   - **目标**：在打 Git Tag（如 `v0.1.0`）时，通过 GitHub Actions 自动交叉编译生成 macOS (`.dmg`) 与 Windows (`.msi` / `.exe`) 安装包并发布到 GitHub Releases。
-  - **涉及文件**：`.github/workflows/release.yml`
+  - **结果**：
+    - 新增 [.github/workflows/release.yml](../.github/workflows/release.yml) 完整发版流水线：推送 `v*` 标签或手动触发 `workflow_dispatch` 自动运行。
+    - 采用四阶段流水线：`verify`（12 项自动化测试 + TypeScript 构建校验）→ `create-release`（预建单一 Draft Release 防多平台并行竞态）→ `build`（并行构建 macOS Apple Silicon `aarch64` `.dmg`、macOS Intel `x64` `.dmg` 与 Windows `x64` `.msi`/`.exe`，并自动上传至 Release 及 Actions 产物）→ `publish-release`（全平台成功后自动转正发布）。
+    - 优化 [scripts/make-dmg.mjs](../scripts/make-dmg.mjs) 动态读取 `package.json` 版本号；自动化测试网新增 **Test 12** 校验跨清单版本一致性与发版流水线配置（12/12 全通过）。
+  - **涉及文件**：`.github/workflows/release.yml` · `scripts/make-dmg.mjs` · `scripts/run-tests.mjs`
 
 ---
 
@@ -89,4 +93,4 @@
 - [x] **交互与安全**：单条 `[换模型重答]`、首次外部域名确认弹窗、导出 Markdown 笔记
 - [x] **Fox 矢量吉祥物**：原生 SVG 渲染、尾巴旋转映射阅读进度、耳朵状态映射、减弱动画模式
 - [x] **桌面化底座**：Tauri 2 配置、CORS-free 原生网络、本地相对图片解析、文件关联与 Finder 参数
-- [x] **质量与规范**：`npm test` 自动化测试网（11/11）、CI 自动化测试与构建校验、MIT 开源协议、双语 README 精简重构
+- [x] **质量与规范**：`npm test` 自动化测试网（12/12）、CI 构建校验与多平台自动发版流水线、MIT 开源协议、双语 README 精简重构

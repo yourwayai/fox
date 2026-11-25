@@ -4,7 +4,8 @@ import path from 'node:path';
 import os from 'node:os';
 
 const APP_NAME = 'Fox';
-const VERSION = '0.1.0';
+const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf-8'));
+const VERSION = pkg.version || '0.1.0';
 const ARCH = process.arch === 'arm64' ? 'aarch64' : 'x64';
 
 // Check possible locations for Fox.app

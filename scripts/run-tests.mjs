@@ -1,5 +1,7 @@
 import { createServer } from 'vite';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 
 async function main() {
   console.log('🧪 Running Fox Automated Test Suite...\n');
@@ -285,6 +287,28 @@ ${'后续内容 '.repeat(100)}
       assert.equal(storedConfigs[0].id, 'cfg_unit_test');
 
       await StorageService.deleteSecureCredentialForConfig('cfg_unit_test');
+    });
+
+    // Test 12: Cross-Manifest Version Parity & Release Workflow Contract (Task 8)
+    await test('Release: verifies version parity across manifests and release workflow configuration', () => {
+      const root = process.cwd();
+      const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8'));
+      const tauriConf = JSON.parse(fs.readFileSync(path.join(root, 'src-tauri', 'tauri.conf.json'), 'utf-8'));
+      const cargoToml = fs.readFileSync(path.join(root, 'src-tauri', 'Cargo.toml'), 'utf-8');
+      const cargoVersionMatch = cargoToml.match(/^version\s*=\s*"([^"]+)"/m);
+
+      assert.ok(cargoVersionMatch, 'Cargo.toml should declare a package version');
+      assert.equal(tauriConf.version, pkg.version, 'tauri.conf.json version must match package.json');
+      assert.equal(cargoVersionMatch[1], pkg.version, 'Cargo.toml version must match package.json');
+
+      const releaseYmlPath = path.join(root, '.github', 'workflows', 'release.yml');
+      assert.ok(fs.existsSync(releaseYmlPath), '.github/workflows/release.yml should exist');
+      const releaseYml = fs.readFileSync(releaseYmlPath, 'utf-8');
+      assert.ok(releaseYml.includes("- 'v*'"), 'Release workflow should trigger on v* tags');
+      assert.ok(releaseYml.includes('aarch64-apple-darwin'), 'Release workflow should build macOS Apple Silicon');
+      assert.ok(releaseYml.includes('x86_64-apple-darwin'), 'Release workflow should build macOS Intel');
+      assert.ok(releaseYml.includes('windows-latest'), 'Release workflow should build Windows installers');
+      assert.ok(releaseYml.includes('tauri-apps/tauri-action'), 'Release workflow should integrate tauri-action');
     });
 
     console.log(`\n📊 Test Results: ${passed} passed, ${failed} failed`);

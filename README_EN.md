@@ -108,7 +108,7 @@ npm run tauri:build    # production bundle
 npm run bundle:dmg     # package production macOS .dmg installer
 ```
 
-**Tests** — 10 automated cases covering TOC parsing, doc IDs, viewport extraction, storage adapters, shortcuts, image beacon safety, and custom prompt presets:
+**Tests** — 12 automated cases covering TOC parsing, doc IDs, viewport extraction, storage adapters, shortcuts, image beacon safety, custom prompt presets, Keychain contract, and release manifest parity:
 
 ```bash
 npm test

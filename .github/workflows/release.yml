@@ -1,0 +1,184 @@
+name: Release - Cross-Platform Build & Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Optional release tag (leave empty to build artifacts only without creating a GitHub Release)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Test & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Automated Test Suite
+        run: npm test
+
+      - name: Typecheck & Frontend Build
+        run: npm run build
+
+  create-release:
+    name: Create Draft Release
+    needs: verify
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.tag != ''
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.release.outputs.release_id }}
+      tag_name: ${{ steps.resolve_tag.outputs.tag_name }}
+    steps:
+      - name: Resolve Release Tag
+        id: resolve_tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "tag_name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag_name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or Reuse Draft Release
+        id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tagName = '${{ steps.resolve_tag.outputs.tag_name }}';
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 50,
+            });
+            let release = releases.find((r) => r.tag_name === tagName);
+            if (!release) {
+              const body = [
+                `## Fox ${tagName}`,
+                '',
+                'Markdown AI 伴读工具桌面客户端发布包（右侧读原文，左侧问 AI，支持系统钥匙串密钥托管与外链防信标保护）。',
+                '',
+                '### 📦 安装包说明',
+                '- **macOS (Apple Silicon / M 系列)**：`Fox_*_aarch64.dmg`',
+                '- **macOS (Intel 处理器)**：`Fox_*_x64.dmg`',
+                '- **Windows (64-bit)**：`Fox_*_x64-setup.exe`（安装向导）或 `Fox_*_x64_en-US.msi`',
+                '',
+                '> 💡 **macOS 首次打开提示**：目前尚未配置 Apple 开发者公证签名，如遇“已损坏”或“无法验证开发者”提示，可在安装后于终端执行：',
+                '> ```bash',
+                '> xattr -cr /Applications/Fox.app',
+                '> ```',
+              ].join('\n');
+
+              const created = await github.rest.repos.createRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: tagName,
+                target_commitish: context.sha,
+                name: `Fox ${tagName}`,
+                body,
+                draft: true,
+                prerelease: tagName.includes('-'),
+              });
+              release = created.data;
+            }
+            core.setOutput('release_id', String(release.id));
+
+  build:
+    name: Build (${{ matrix.label }})
+    needs: [verify, create-release]
+    if: always() && needs.verify.result == 'success' && (needs.create-release.result == 'success' || needs.create-release.result == 'skipped')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: macOS Apple Silicon (aarch64)
+            os: macos-latest
+            target: aarch64-apple-darwin
+            args: --target aarch64-apple-darwin
+            artifact_glob: src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          - label: macOS Intel (x64)
+            os: macos-latest
+            target: x86_64-apple-darwin
+            args: --target x86_64-apple-darwin
+            artifact_glob: src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+          - label: Windows (x64)
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: ''
+            artifact_glob: |
+              src-tauri/target/release/bundle/msi/*.msi
+              src-tauri/target/release/bundle/nsis/*.exe
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Build Tauri App & Upload to Release
+        if: needs.create-release.outputs.release_id != ''
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: ${{ matrix.args }}
+
+      - name: Build Tauri App (Artifact-only Dispatch)
+        if: needs.create-release.outputs.release_id == ''
+        run: npm run tauri build -- ${{ matrix.args }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fox-${{ matrix.target }}
+          path: ${{ matrix.artifact_glob }}
+          if-no-files-found: warn
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [create-release, build]
+    if: startsWith(github.ref, 'refs/tags/v') && needs.create-release.outputs.release_id != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish Draft Release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: Number('${{ needs.create-release.outputs.release_id }}'),
+              draft: false,
+            });
